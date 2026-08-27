@@ -1,0 +1,6 @@
+<img 
+  src="https://via.placeholder.com/350x350?text=HelpDesk+Logo" 
+  alt="HelpDesk Logo" 
+  className="img-fluid" 
+  style={{ maxHeight: '350px' }} 
+/>

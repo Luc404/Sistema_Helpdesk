@@ -1,0 +1,30 @@
+// Importa os componentes de roteamento da biblioteca react-router-dom:
+// - BrowserRouter: habilita a navegação entre páginas usando a barra de endereços do navegador
+// - Routes: agrupa todas as rotas da aplicação
+// - Route: define uma rota específica (caminho na URL) e qual componente renderizar nela
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+
+// Importa as três páginas do sistema
+import Login from './pages/Login';                 // Página de entrada (rota "/")
+import Cadastro from './pages/Cadastro';           // Página de criação de conta (rota "/cadastro")
+import EsqueceuSenha from './pages/EsqueceuSenha'; // Página de recuperação de senha (rota "/esqueceu-senha")
+
+// Componente principal da aplicação: apenas define o roteamento,
+// decidindo qual página mostrar conforme a URL acessada
+export default function App() {
+  return (
+    // BrowserRouter envolve toda a aplicação para gerenciar as rotas
+    <BrowserRouter>
+      <Routes>
+        {/* Rota principal ("/") -> mostra a página de Login */}
+        <Route path="/" element={<Login />} />
+
+        {/* Rota "/cadastro" -> mostra a página de criação de conta */}
+        <Route path="/cadastro" element={<Cadastro />} />
+
+        {/* Rota "/esqueceu-senha" -> mostra a página de recuperação de senha */}
+        <Route path="/esqueceu-senha" element={<EsqueceuSenha />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
