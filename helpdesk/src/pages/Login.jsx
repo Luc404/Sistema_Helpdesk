@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-// Importação correta das imagens que você moveu
+import { useAuth } from '../context/auth-context';
 import logo from '../assets/logo.png';
 import illustration from '../assets/modeloFS.png';
 
@@ -8,12 +8,13 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleSubmit = (e) => {
     e.preventDefault();
     alert(`Acessando conta: ${email}`);
-    // Simulação de login - redireciona para dashboard (Criar depois)
-    // navigate('/dashboard'); 
+    login(email);
+    navigate('/home');
   };
 
   return (

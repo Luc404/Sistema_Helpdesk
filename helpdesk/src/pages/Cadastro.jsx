@@ -10,8 +10,7 @@ export default function Cadastro() {
     dataNascimento: '',
     email: '',
     senha: '',
-    confirmarSenha: '',
-    aceitarTermos: false
+    confirmarSenha: ''
   });
 
   const navigate = useNavigate();
@@ -39,7 +38,7 @@ export default function Cadastro() {
       <div className="card border-0 shadow-lg overflow-hidden" style={{ width: '950px', borderRadius: '25px' }}>
         <div className="row g-0">
           
-          {/* Lado Esquerdo - Logo e Ilustração (agora em fundo branco como no Figma) */}
+          {/* Lado Esquerdo - Logo e Ilustração */}
           <div className="col-md-5 bg-white d-flex flex-column justify-content-between p-4 pt-5 pb-5 border-end">
             <div className="text-center">
               <img src={logo} alt="The Robbins Logo" className="img-fluid" style={{ maxWidth: '200px' }} />
@@ -51,7 +50,7 @@ export default function Cadastro() {
 
           {/* Lado Direito - Formulário */}
           <div className="col-md-7 bg-secondary p-5 text-white">
-            <h1 className="text-center mb-4 fw-bold">cadastro - se</h1>
+            <h1 className="text-center mb-4 fw-bold">Registrar - se</h1>
             
             <form onSubmit={handleSubmit}>
               <div className="mb-2">
@@ -126,20 +125,13 @@ export default function Cadastro() {
               </div>
 
               <div className="d-flex align-items-center justify-content-between mt-4">
-                <div className="form-check">
-                  <input
-                    type="checkbox"
-                    name="aceitarTermos"
-                    id="termos"
-                    className="form-check-input p-2"
-                    checked={formData.aceitarTermos}
-                    onChange={handleChange}
-                    required
-                  />
-                  <label htmlFor="termos" className="form-check-label ms-2 fw-semibold">
-                    Aceitar termo
-                  </label>
-                </div>
+                <button
+                  type="button"
+                  className="btn btn-light rounded-pill px-5 py-2 fw-bold text-secondary text-uppercase"
+                  onClick={() => navigate('/')}
+                  >
+                  Voltar
+                </button>
 
                 <button type="submit" className="btn btn-light rounded-pill px-5 py-2 fw-bold text-secondary text-uppercase">
                   Criar
