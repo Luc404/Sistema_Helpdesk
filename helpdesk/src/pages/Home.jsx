@@ -36,7 +36,7 @@ export const Home = () => {
 
       {/* Cards de resumo com contadores de status dos chamados */}
       <div className="row g-3 mb-4 text-center">
-        <div className="col"><div className="p-3 bg-secondary text-white rounded shadow-sm"><h3>100</h3><small>todos</small></div></div>
+        <div className="col"><div className="p-3 bg-secondary text-white rounded shadow-sm"><h3>75</h3><small>todos</small></div></div>
         <div className="col"><div className="p-3 bg-secondary text-white rounded shadow-sm"><h3>5</h3><small>Pendentes</small></div></div>
         <div className="col"><div className="p-3 bg-secondary text-white rounded shadow-sm"><h3>20</h3><small>Validar</small></div></div>
         <div className="col"><div className="p-3 bg-secondary text-white rounded shadow-sm"><h3>50</h3><small>Concluidos</small></div></div>
