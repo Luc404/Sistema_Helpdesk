@@ -23,7 +23,7 @@ export const ChamadosTecnico = () => {
 
       {/* Cards de resumo com contadores de chamados */}
       <div className="row g-2 mb-3 text-center">
-        <div className="col"><div className="p-2 bg-secondary text-white rounded"><h4>100</h4><small>todos</small></div></div>
+        <div className="col"><div className="p-2 bg-secondary text-white rounded"><h4>75</h4><small>todos</small></div></div>
         <div className="col"><div className="p-2 bg-secondary text-white rounded"><h4>5</h4><small>Pendentes</small></div></div>
         <div className="col"><div className="p-2 bg-secondary text-white rounded"><h4>20</h4><small>Validar</small></div></div>
         <div className="col"><div className="p-2 bg-secondary text-white rounded"><h4>50</h4><small>Concluidos</small></div></div>
