@@ -1,5 +1,6 @@
 import { SidebarLayout } from './SidebarLayout';
 
+// Dados mockados de chamados atribuídos ao técnico
 const chamadosTecnicos = [
   { id: '001', nome: 'Criar um novo usuário', criterio: 'Urgência', status: 'Concluido', data: '29/08/2026', usuario: 'Igor.cardoso' },
   { id: '003', nome: 'Personalizar sistema', criterio: 'Média', status: 'Pendente', data: '01/01/2025', usuario: 'Lucas.Henrique' },
@@ -11,13 +12,16 @@ const chamadosTecnicos = [
   { id: '009', nome: 'Back up', criterio: 'Baixa', status: 'Pendente', data: '01/01/2025', usuario: 'Marcos.Dhiego' },
 ];
 
+// Página de visualização de chamados para o perfil de técnico
 export const ChamadosTecnico = () => {
   return (
-    <SidebarLayout userType="Técnico">
+    <SidebarLayout>
+      {/* Título da página */}
       <div className="text-center mb-3">
         <span className="bg-secondary text-white px-5 py-2 rounded-pill fw-bold fs-5">chamados</span>
       </div>
 
+      {/* Cards de resumo com contadores de chamados */}
       <div className="row g-2 mb-3 text-center">
         <div className="col"><div className="p-2 bg-secondary text-white rounded"><h4>100</h4><small>todos</small></div></div>
         <div className="col"><div className="p-2 bg-secondary text-white rounded"><h4>5</h4><small>Pendentes</small></div></div>
@@ -25,7 +29,9 @@ export const ChamadosTecnico = () => {
         <div className="col"><div className="p-2 bg-secondary text-white rounded"><h4>50</h4><small>Concluidos</small></div></div>
       </div>
 
+      {/* Card com tabela de chamados e barra de pesquisa */}
       <div className="card p-3 border-secondary shadow-sm">
+        {/* Campo de busca por ID do chamado */}
         <div className="input-group rounded-pill border bg-white mb-3">
           <span className="input-group-text bg-transparent border-0 pe-0 ms-2">
             <i className="bi bi-search text-muted"></i>
@@ -33,6 +39,7 @@ export const ChamadosTecnico = () => {
           <input type="text" className="form-control border-0 shadow-none ps-3" placeholder="Chamados por id" />
         </div>
 
+        {/* Tabela responsiva com lista de chamados */}
         <div className="table-responsive">
           <table className="table table-bordered text-center align-middle">
             <thead className="table-light">
@@ -46,6 +53,7 @@ export const ChamadosTecnico = () => {
               </tr>
             </thead>
             <tbody>
+              {/* Renderiza cada chamado como uma linha da tabela */}
               {chamadosTecnicos.map((item) => (
                 <tr key={item.id}>
                   <td>{item.id}</td>
@@ -60,6 +68,7 @@ export const ChamadosTecnico = () => {
           </table>
         </div>
 
+        {/* Paginação e controle de exibição de linhas */}
         <div className="d-flex justify-content-between align-items-center mt-2">
           <select className="form-select form-select-sm" style={{ width: '70px' }}>
             <option>9</option>

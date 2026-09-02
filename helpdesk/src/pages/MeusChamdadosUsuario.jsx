@@ -1,5 +1,6 @@
 import { SidebarLayout } from './SidebarLayout';
 
+// Dados mockados dos chamados do usuário
 const chamados = [
   { id: '001', nome: 'Criar um novo usuário', status: 'Concluido', data: '29/08/2026', unidade: 'matriz' },
   { id: '002', nome: 'Personalizar sistema', status: 'Pendente', data: '01/01/2025', unidade: 'matriz' },
@@ -7,14 +8,18 @@ const chamados = [
   { id: '004', nome: 'Segurança', status: 'Pendente', data: '04/04/2026', unidade: 'matriz' },
 ];
 
+// Página de visualização dos chamados do usuário logado
 export const MeusChamadosUsuario = () => {
   return (
-    <SidebarLayout userType="Usuário">
+    <SidebarLayout>
+      {/* Título da página */}
       <div className="text-center mb-4">
         <span className="bg-secondary text-white px-5 py-2 rounded-pill fw-bold fs-5">Meus chamados</span>
       </div>
 
+      {/* Card com barra de pesquisa e tabela de chamados */}
       <div className="card p-3 border-secondary shadow-sm">
+        {/* Campo de busca */}
         <div className="mb-3">
           <div className="input-group rounded-pill border bg-white">
             <span className="input-group-text bg-transparent border-0 pe-0 ms-2">
@@ -24,6 +29,7 @@ export const MeusChamadosUsuario = () => {
           </div>
         </div>
 
+        {/* Tabela responsiva com lista de chamados do usuário */}
         <div className="table-responsive">
           <table className="table table-bordered text-center align-middle">
             <thead className="table-light">
@@ -36,6 +42,7 @@ export const MeusChamadosUsuario = () => {
               </tr>
             </thead>
             <tbody>
+              {/* Renderiza cada chamado como uma linha da tabela */}
               {chamados.map((item) => (
                 <tr key={item.id}>
                   <td>{item.id}</td>
@@ -49,6 +56,7 @@ export const MeusChamadosUsuario = () => {
           </table>
         </div>
 
+        {/* Paginação e controle de exibição de linhas */}
         <div className="d-flex justify-content-between align-items-center mt-2">
           <div className="d-flex align-items-center">
             <select className="form-select form-select-sm me-2" style={{ width: '70px' }}>
