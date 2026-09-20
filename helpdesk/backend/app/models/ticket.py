@@ -29,6 +29,12 @@ class Ticket(Base):
 
     cliente_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     tecnico_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    servico_id = Column(Integer, ForeignKey("servicos.id"), nullable=False)
+    unidade_id = Column(Integer, ForeignKey("unidades.id"), nullable=False)
+    tipo_problema = Column(String, nullable=False)  # "duvida" ou "defeito"
 
     cliente = relationship("User", foreign_keys=[cliente_id], back_populates="chamados_criados")
     tecnico = relationship("User", foreign_keys=[tecnico_id], back_populates="chamados_atribuidos")
+    servico = relationship("Servico", back_populates="tickets")
+    unidade = relationship("Unidade", back_populates="tickets")
+    copias = relationship("TicketCopia", cascade="all, delete-orphan")
