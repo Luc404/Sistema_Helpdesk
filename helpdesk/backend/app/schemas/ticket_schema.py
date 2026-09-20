@@ -1,20 +1,32 @@
+# ============================================
+# SCHEMAS DE TICKET
+# ============================================
+
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
 from app.models.ticket import StatusEnum, PrioridadeEnum
 from app.schemas.partial import PartialUpdate
 
+
 class TicketCreate(BaseModel):
+    """Dados enviados ao abrir um chamado.
+
+    O cliente_id NÃO é enviado aqui: ele vem do usuário autenticado
+    (current_user) dentro do service.
+    """
     titulo: str
     descricao: str
-    servico_id: int
-    unidade_id: int
-    tipo_problema: str
+    servico_id: int                  # Serviço solicitado
+    unidade_id: int                  # Unidade relacionada ao chamado
+    tipo_problema: str               # "duvida" ou "defeito"
     prioridade: PrioridadeEnum = PrioridadeEnum.MEDIA
-    tecnico_id: Optional[int] = None
-    copia_user_ids: Optional[list[int]] = None
+    tecnico_id: Optional[int] = None # Técnico já pode ser indicado na abertura
+    copia_user_ids: Optional[list[int]] = None  # Usuários em cópia
+
 
 class TicketUpdate(PartialUpdate):
+    """Dados permitidos ao editar um chamado (update parcial seguro)."""
     titulo: Optional[str] = None
     descricao: Optional[str] = None
     status: Optional[StatusEnum] = None
@@ -24,7 +36,9 @@ class TicketUpdate(PartialUpdate):
     tipo_problema: Optional[str] = None
     tecnico_id: Optional[int] = None
 
+
 class TicketResponse(BaseModel):
+    """Formato retornado pela API para chamados."""
     id: int
     titulo: str
     descricao: str

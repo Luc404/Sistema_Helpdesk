@@ -1,3 +1,10 @@
+# ============================================
+# SERVICE DE TICKET (regras de negócio)
+# ============================================
+# Lógica de abertura, listagem, edição e remoção de chamados,
+# incluindo as regras de visibilidade (quem pode ver qual ticket)
+# e a criação das cópias (usuários em cópia).
+
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
@@ -7,17 +14,26 @@ from app.models.user import User, RoleEnum
 from app.models.ticket_copia import TicketCopia
 from app.schemas.ticket_schema import TicketCreate, TicketUpdate
 
+
 def get_ticket(db: Session, ticket_id: int) -> Ticket:
+    """Busca um ticket pelo id; lança 404 se não existir."""
     ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket Não Encontrado")
     return ticket
 
+
 def get_tickets(db: Session, current_user: User) -> list[Ticket]:
+    """Lista os tickets conforme o papel do usuário:
+
+    - TÉCNICO: vê todos os chamados.
+    - USUÁRIO: vê apenas os que abriu + os que está em cópia.
+    """
     query = db.query(Ticket)
     if current_user.role == RoleEnum.TECNICO:
         return query.order_by(Ticket.data_criacao.desc()).all()
 
+    # Ids de tickets onde o usuário aparece em cópia.
     ticket_ids = [
         c.ticket_id for c in db.query(TicketCopia.ticket_id).filter(TicketCopia.user_id == current_user.id)
     ]
@@ -27,7 +43,13 @@ def get_tickets(db: Session, current_user: User) -> list[Ticket]:
         .all()
     )
 
+
 def create_ticket(db: Session, data: TicketCreate, cliente: User) -> Ticket:
+    """Abre um novo chamado.
+
+    - O cliente é o usuário autenticado (não vem do body).
+    - Cria também os registros de cópia caso `copia_user_ids` seja enviado.
+    """
     ticket = Ticket(
         titulo=data.titulo,
         descricao=data.descricao,
@@ -39,7 +61,7 @@ def create_ticket(db: Session, data: TicketCreate, cliente: User) -> Ticket:
         tipo_problema=data.tipo_problema,
     )
     db.add(ticket)
-    db.flush()
+    db.flush()  # Garante que o id do ticket exista antes de criar as cópias
 
     for user_id in data.copia_user_ids or []:
         db.add(TicketCopia(ticket_id=ticket.id, user_id=user_id))
@@ -48,7 +70,9 @@ def create_ticket(db: Session, data: TicketCreate, cliente: User) -> Ticket:
     db.refresh(ticket)
     return ticket
 
+
 def update_ticket(db: Session, ticket_id: int, data: TicketUpdate) -> Ticket:
+    """Edita apenas os campos enviados e atualiza data_atualizacao."""
     ticket = get_ticket(db, ticket_id)
     updates = {k: v for k, v in data.model_dump(exclude_unset=True).items() if v is not None}
     for key, value in updates.items():
@@ -58,12 +82,20 @@ def update_ticket(db: Session, ticket_id: int, data: TicketUpdate) -> Ticket:
     db.refresh(ticket)
     return ticket
 
+
 def delete_ticket(db: Session, ticket_id: int) -> None:
+    """Remove um ticket (as cópias são removidas em cascata)."""
     ticket = get_ticket(db, ticket_id)
     db.delete(ticket)
     db.commit()
 
+
 def can_access(db: Session, ticket_id: int, user: User) -> Ticket:
+    """Verifica se o usuário pode acessar um ticket específico.
+
+    - TÉCNICO: sempre pode.
+    - USUÁRIO: apenas se abriu o ticket ou está em cópia (senão -> 403).
+    """
     ticket = get_ticket(db, ticket_id)
     if user.role == RoleEnum.TECNICO:
         return ticket
