@@ -8,6 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine, Base
 
+
 # Importa os models para que o SQLAlchemy conheça todas as tabelas
 # antes de executar o create_all abaixo.
 from app.models import servico, unidade, ticket_copia, user, ticket, password_reset_token
@@ -57,3 +58,8 @@ app.include_router(ticket_copia_router)
 def read_root():
     """Endpoint simples para verificar se a API está no ar."""
     return {"status": "API Helpdesk rodando perfeitamente!"}
+
+@app.get("/ping")
+def ping():
+    """Endpoint para testar comunicação com o Frontend."""
+    return{"mensagem": "pong"}

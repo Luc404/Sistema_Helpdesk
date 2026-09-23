@@ -27,7 +27,7 @@ router = APIRouter(prefix="/tickets", tags=["Tickets"])
 # ROTA: POST /tickets  ->  Abrir chamado
 # ----------------------------------------------------------
 @router.post("/", response_model=TicketResponse, status_code=status.HTTP_201_CREATED)
-def create_ticket(data: TicketCreate, db: Session = Depends(get_db),
+async def create_ticket(data: TicketCreate, db: Session = Depends(get_db),
                   current_user: User = Depends(get_current_user)):
     """
     FUNCIONALIDADE: Abre um novo chamado.
@@ -64,7 +64,7 @@ def create_ticket(data: TicketCreate, db: Session = Depends(get_db),
 # ROTA: GET /tickets  ->  Listar chamados
 # ----------------------------------------------------------
 @router.get("/", response_model=list[TicketResponse])
-def list_tickets(db: Session = Depends(get_db),
+async def list_tickets(db: Session = Depends(get_db),
                  current_user: User = Depends(get_current_user)):
     """
     FUNCIONALIDADE: Lista os chamados conforme o perfil do usuário logado.
@@ -84,7 +84,7 @@ def list_tickets(db: Session = Depends(get_db),
 # ROTA: GET /tickets/{ticket_id}  ->  Detalhar chamado
 # ----------------------------------------------------------
 @router.get("/{ticket_id}", response_model=TicketResponse)
-def get_ticket(ticket_id: int, db: Session = Depends(get_db),
+async def get_ticket(ticket_id: int, db: Session = Depends(get_db),
                current_user: User = Depends(get_current_user)):
     """
     FUNCIONALIDADE: Retorna um chamado específico.
@@ -108,7 +108,7 @@ def get_ticket(ticket_id: int, db: Session = Depends(get_db),
 # ----------------------------------------------------------
 @router.put("/{ticket_id}", response_model=TicketResponse,
             dependencies=[Depends(require_roles(RoleEnum.TECNICO))])
-def update_ticket(ticket_id: int, data: TicketUpdate, db: Session = Depends(get_db)):
+async def update_ticket(ticket_id: int, data: TicketUpdate, db: Session = Depends(get_db)):
     """
     FUNCIONALIDADE: Edita um chamado (status, prioridade, técnico, conteúdo).
     Acesso: somente TÉCNICO.
@@ -137,7 +137,7 @@ def update_ticket(ticket_id: int, data: TicketUpdate, db: Session = Depends(get_
 # ROTA: DELETE /tickets/{ticket_id}  ->  Remover chamado
 # ----------------------------------------------------------
 @router.delete("/{ticket_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_ticket(ticket_id: int, db: Session = Depends(get_db),
+async def delete_ticket(ticket_id: int, db: Session = Depends(get_db),
                   current_user: User = Depends(get_current_user)):
     """
     FUNCIONALIDADE: Remove um chamado (as cópias são removidas em cascata).

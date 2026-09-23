@@ -17,14 +17,14 @@ from app.schemas.user_schema import UserCreate, UserUpdate, UserResponse
 from app.services import user_service
 
 # Prefixo de todas as rotas deste arquivo + tag exibida no Swagger.
-router = APIRouter(prefix="/users", tags=["Usuários"])
+router = APIRouter(prefix="/users", tags=["Usuário"])
 
 
 # ----------------------------------------------------------
 # ROTA: POST /users  ->  Criar usuário
 # ----------------------------------------------------------
 @router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-def create(user: UserCreate, db: Session = Depends(get_db)):
+async def create(user: UserCreate, db: Session = Depends(get_db)):
     """
     FUNCIONALIDADE: Cadastra um novo usuário no sistema.
 
@@ -55,7 +55,7 @@ def create(user: UserCreate, db: Session = Depends(get_db)):
 # ROTA: GET /users  ->  Listar usuários
 # ----------------------------------------------------------
 @router.get("/", response_model=list[UserResponse])
-def list_users(db: Session = Depends(get_db)):
+async def list_users(db: Session = Depends(get_db)):
     """
     FUNCIONALIDADE: Lista todos os usuários cadastrados.
 
@@ -73,7 +73,7 @@ def list_users(db: Session = Depends(get_db)):
 # ROTA: GET /users/{user_id}  ->  Detalhar usuário
 # ----------------------------------------------------------
 @router.get("/{user_id}", response_model=UserResponse)
-def get_users(user_id: int, db: Session = Depends(get_db)):
+async def get_users(user_id: int, db: Session = Depends(get_db)):
     """
     FUNCIONALIDADE: Retorna os dados de um usuário específico.
 
@@ -94,7 +94,7 @@ def get_users(user_id: int, db: Session = Depends(get_db)):
 # ROTA: PUT /users/{user_id}  ->  Editar usuário
 # ----------------------------------------------------------
 @router.put("/{user_id}", response_model=UserResponse)
-def update(user_id: int, user: UserUpdate, db: Session = Depends(get_db)):
+async def update(user_id: int, user: UserUpdate, db: Session = Depends(get_db)):
     """
     FUNCIONALIDADE: Edita os dados de um usuário.
 
@@ -123,7 +123,7 @@ def update(user_id: int, user: UserUpdate, db: Session = Depends(get_db)):
 # ROTA: DELETE /users/{user_id}  ->  Remover usuário
 # ----------------------------------------------------------
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete(user_id: int, db: Session = Depends(get_db)):
+async def delete(user_id: int, db: Session = Depends(get_db)):
     """
     FUNCIONALIDADE: Remove um usuário do sistema (exclusão definitiva).
 

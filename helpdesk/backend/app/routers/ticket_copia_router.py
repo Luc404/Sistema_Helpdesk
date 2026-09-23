@@ -27,7 +27,7 @@ router = APIRouter(prefix="/tickets", tags=["Ticket Cópias"])
 # ROTA: GET /tickets/{ticket_id}/copias  ->  Listar cópias
 # ----------------------------------------------------------
 @router.get("/{ticket_id}/copias", response_model=list[TicketCopiaResponse])
-def list_copias(ticket_id: int, db: Session = Depends(get_db),
+async def list_copias(ticket_id: int, db: Session = Depends(get_db),
                 current_user: User = Depends(get_current_user)):
     """
     FUNCIONALIDADE: Lista os usuários que estão em cópia de um ticket.
@@ -52,7 +52,7 @@ def list_copias(ticket_id: int, db: Session = Depends(get_db),
 # ----------------------------------------------------------
 @router.post("/{ticket_id}/copias", response_model=list[TicketCopiaResponse],
              status_code=status.HTTP_201_CREATED)
-def add_copias(ticket_id: int, data: TicketCopiaCreate, db: Session = Depends(get_db),
+async def add_copias(ticket_id: int, data: TicketCopiaCreate, db: Session = Depends(get_db),
                current_user: User = Depends(get_current_user)):
     """
     FUNCIONALIDADE: Adiciona usuários em cópia a um ticket.
@@ -80,7 +80,7 @@ def add_copias(ticket_id: int, data: TicketCopiaCreate, db: Session = Depends(ge
 # ROTA: DELETE /tickets/{ticket_id}/copias/{copia_id}  ->  Remover cópia
 # ----------------------------------------------------------
 @router.delete("/{ticket_id}/copias/{copia_id}", status_code=status.HTTP_204_NO_CONTENT)
-def remove_copia(ticket_id: int, copia_id: int, db: Session = Depends(get_db),
+async def remove_copia(ticket_id: int, copia_id: int, db: Session = Depends(get_db),
                  current_user: User = Depends(get_current_user)):
     """
     FUNCIONALIDADE: Remove um usuário da lista de cópias de um ticket.

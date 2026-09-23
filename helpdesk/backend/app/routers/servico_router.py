@@ -25,7 +25,7 @@ router = APIRouter(prefix="/servicos", tags=["Serviços"])
 # ROTA: GET /servicos  ->  Listar serviços
 # ----------------------------------------------------------
 @router.get("/", response_model=list[ServicoResponse])
-def list_servicos(db: Session = Depends(get_db)):
+async def list_servicos(db: Session = Depends(get_db)):
     """
     FUNCIONALIDADE: Lista todos os serviços cadastrados.
     Acesso: público (qualquer um pode listar os serviços para abrir chamado).
@@ -41,7 +41,7 @@ def list_servicos(db: Session = Depends(get_db)):
 # ----------------------------------------------------------
 @router.post("/", response_model=ServicoResponse, status_code=status.HTTP_201_CREATED,
              dependencies=[Depends(require_roles(RoleEnum.TECNICO))])
-def create_servico(data: ServicoCreate, db: Session = Depends(get_db)):
+async def create_servico(data: ServicoCreate, db: Session = Depends(get_db)):
     """
     FUNCIONALIDADE: Cadastra um novo serviço disponível para chamados.
     Acesso: somente TÉCNICO.
@@ -64,7 +64,7 @@ def create_servico(data: ServicoCreate, db: Session = Depends(get_db)):
 # ROTA: GET /servicos/{servico_id}  ->  Detalhar serviço
 # ----------------------------------------------------------
 @router.get("/{servico_id}", response_model=ServicoResponse)
-def get_servico(servico_id: int, db: Session = Depends(get_db)):
+async def get_servico(servico_id: int, db: Session = Depends(get_db)):
     """
     FUNCIONALIDADE: Retorna um serviço específico pelo id.
     Acesso: público.
@@ -84,7 +84,7 @@ def get_servico(servico_id: int, db: Session = Depends(get_db)):
 # ----------------------------------------------------------
 @router.put("/{servico_id}", response_model=ServicoResponse,
             dependencies=[Depends(require_roles(RoleEnum.TECNICO))])
-def update_servico(servico_id: int, data: ServicoUpdate, db: Session = Depends(get_db)):
+async def update_servico(servico_id: int, data: ServicoUpdate, db: Session = Depends(get_db)):
     """
     FUNCIONALIDADE: Edita um serviço (update parcial).
     Acesso: somente TÉCNICO.
@@ -110,7 +110,7 @@ def update_servico(servico_id: int, data: ServicoUpdate, db: Session = Depends(g
 # ----------------------------------------------------------
 @router.delete("/{servico_id}", status_code=status.HTTP_204_NO_CONTENT,
               dependencies=[Depends(require_roles(RoleEnum.TECNICO))])
-def delete_servico(servico_id: int, db: Session = Depends(get_db)):
+async def delete_servico(servico_id: int, db: Session = Depends(get_db)):
     """
     FUNCIONALIDADE: Remove um serviço do sistema.
     Acesso: somente TÉCNICO.

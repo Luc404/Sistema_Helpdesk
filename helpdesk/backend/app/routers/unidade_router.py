@@ -25,7 +25,7 @@ router = APIRouter(prefix="/unidades", tags=["Unidades"])
 # ROTA: GET /unidades  ->  Listar unidades
 # ----------------------------------------------------------
 @router.get("/", response_model=list[UnidadeResponse])
-def list_unidades(db: Session = Depends(get_db)):
+async def list_unidades(db: Session = Depends(get_db)):
     """
     FUNCIONALIDADE: Lista todas as unidades cadastradas.
     Acesso: público (o usuário precisa ver a própria unidade ao abrir chamado).
@@ -41,7 +41,7 @@ def list_unidades(db: Session = Depends(get_db)):
 # ----------------------------------------------------------
 @router.post("/", response_model=UnidadeResponse, status_code=status.HTTP_201_CREATED,
              dependencies=[Depends(require_roles(RoleEnum.TECNICO))])
-def create_unidade(data: UnidadeCreate, db: Session = Depends(get_db)):
+async def create_unidade(data: UnidadeCreate, db: Session = Depends(get_db)):
     """
     FUNCIONALIDADE: Cadastra uma nova unidade.
     Acesso: somente TÉCNICO.
@@ -61,7 +61,7 @@ def create_unidade(data: UnidadeCreate, db: Session = Depends(get_db)):
 # ROTA: GET /unidades/{unidade_id}  ->  Detalhar unidade
 # ----------------------------------------------------------
 @router.get("/{unidade_id}", response_model=UnidadeResponse)
-def get_unidade(unidade_id: int, db: Session = Depends(get_db)):
+async def get_unidade(unidade_id: int, db: Session = Depends(get_db)):
     """
     FUNCIONALIDADE: Retorna uma unidade específica pelo id.
     Acesso: público.
@@ -81,7 +81,7 @@ def get_unidade(unidade_id: int, db: Session = Depends(get_db)):
 # ----------------------------------------------------------
 @router.put("/{unidade_id}", response_model=UnidadeResponse,
             dependencies=[Depends(require_roles(RoleEnum.TECNICO))])
-def update_unidade(unidade_id: int, data: UnidadeUpdate, db: Session = Depends(get_db)):
+async def update_unidade(unidade_id: int, data: UnidadeUpdate, db: Session = Depends(get_db)):
     """
     FUNCIONALIDADE: Edita uma unidade (update parcial).
     Acesso: somente TÉCNICO.
@@ -107,7 +107,7 @@ def update_unidade(unidade_id: int, data: UnidadeUpdate, db: Session = Depends(g
 # ----------------------------------------------------------
 @router.delete("/{unidade_id}", status_code=status.HTTP_204_NO_CONTENT,
               dependencies=[Depends(require_roles(RoleEnum.TECNICO))])
-def delete_unidade(unidade_id: int, db: Session = Depends(get_db)):
+async def delete_unidade(unidade_id: int, db: Session = Depends(get_db)):
     """
     FUNCIONALIDADE: Remove uma unidade do sistema.
     Acesso: somente TÉCNICO.

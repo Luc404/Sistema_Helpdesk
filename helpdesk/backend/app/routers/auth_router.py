@@ -27,7 +27,7 @@ router = APIRouter(prefix="/auth", tags=["Autenticação"])
 # ROTA: POST /auth/register  ->  Cadastro de usuário
 # ----------------------------------------------------------
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-def register(user: UserCreate, db: Session = Depends(get_db)):
+async def register(user: UserCreate, db: Session = Depends(get_db)):
     """
     FUNCIONALIDADE: Cadastra um novo usuário (equivalente a POST /users/).
 
@@ -57,7 +57,7 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
 # ROTA: POST /auth/login  ->  Login (obter token)
 # ----------------------------------------------------------
 @router.post("/login", response_model=TokenResponse)
-def login(data: UserLogin, db: Session = Depends(get_db)):
+async def login(data: UserLogin, db: Session = Depends(get_db)):
     """
     FUNCIONALIDADE: Autentica o usuário e devolve o token de acesso.
 
@@ -89,7 +89,7 @@ def login(data: UserLogin, db: Session = Depends(get_db)):
 # ROTA: GET /auth/me  ->  Usuário logado
 # ----------------------------------------------------------
 @router.get("/me", response_model=UserResponse)
-def me(current_user: User = Depends(get_current_user)):
+async def me(current_user: User = Depends(get_current_user)):
     """
     FUNCIONALIDADE: Retorna os dados do usuário que está logado.
 
@@ -110,7 +110,7 @@ def me(current_user: User = Depends(get_current_user)):
 # ROTA: POST /auth/forgot-password  ->  Solicitar redefinição
 # ----------------------------------------------------------
 @router.post("/forgot-password")
-def forgot_password(data: PasswordResetRequest, db: Session = Depends(get_db)):
+async def forgot_password(data: PasswordResetRequest, db: Session = Depends(get_db)):
     """
     FUNCIONALIDADE: Gera um token para redefinir a senha de um usuário.
 
@@ -135,7 +135,7 @@ def forgot_password(data: PasswordResetRequest, db: Session = Depends(get_db)):
 # ROTA: POST /auth/reset-password  ->  Efetivar redefinição
 # ----------------------------------------------------------
 @router.post("/reset-password", response_model=UserResponse)
-def reset_password(data: PasswordResetConfirm, db: Session = Depends(get_db)):
+async def reset_password(data: PasswordResetConfirm, db: Session = Depends(get_db)):
     """
     FUNCIONALIDADE: Troca a senha usando o token recebido por e-mail.
 
