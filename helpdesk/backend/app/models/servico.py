@@ -10,6 +10,7 @@ from app.database import Base
 
 
 class Servico(Base):
+    # Nome real da tabela no banco.
     __tablename__ = "servicos"
 
     id = Column(Integer, primary_key=True, index=True) # Identificador único

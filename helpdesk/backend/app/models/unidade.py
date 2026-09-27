@@ -10,6 +10,7 @@ from app.database import Base
 
 
 class Unidade(Base):
+    # Nome real da tabela no banco.
     __tablename__ = "unidades"
 
     id = Column(Integer, primary_key=True, index=True)   # Identificador único

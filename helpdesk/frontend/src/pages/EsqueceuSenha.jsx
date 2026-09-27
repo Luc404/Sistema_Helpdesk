@@ -1,19 +1,43 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { authService } from '../services/authService';
 
-// Página de recuperação de senha - solicita envio de link de redefinição
+// Página de recuperação de senha - solicita o token de redefinição
 export default function EsqueceuSenha() {
-  // Estado para armazenar o e-mail informado pelo usuário
+  // E-mail informado pelo usuário
   const [email, setEmail] = useState('');
+
+  // Mensagem de erro e estado de envio.
+  const [erro, setErro] = useState('');
+  const [enviando, setEnviando] = useState(false);
+
+  // Token devolvido pela API. Existe porque o backend ainda não envia
+  // e-mail: em desenvolvimento ele volta no corpo da resposta e precisa
+  // ser exibido para que o usuário consiga testar o fluxo. Em produção
+  // este estado sairia da tela e o token chegaria por e-mail.
+  const [tokenGerado, setTokenGerado] = useState('');
 
   // Hook para navegação
   const navigate = useNavigate();
 
-  // Valida o e-mail e redireciona para o login
-  const handleSubmit = (e) => {
+  // Solicita o token de redefinição de senha
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    alert(`Instruções de recuperação enviadas para: ${email}`);
-    navigate('/');
+    setErro('');
+    setTokenGerado('');
+
+    setEnviando(true);
+
+    try {
+      const resposta = await authService.esqueceuSenha(email);
+
+      setTokenGerado(resposta.token);
+    } catch (falha) {
+      // 404 = e-mail não encontrado ou conta inativa.
+      setErro(falha?.response?.data?.detail || 'Não foi possível solicitar a redefinição.');
+    } finally {
+      setEnviando(false);
+    }
   };
 
   return (
@@ -22,6 +46,12 @@ export default function EsqueceuSenha() {
       <form onSubmit={handleSubmit} style={styles.card}>
         <h2>Recuperar Senha</h2>
         <p style={styles.desc}>Digite seu e-mail para receber um link de redefinição.</p>
+
+        {erro && (
+          <div style={styles.avisoErro} role="alert">
+            {erro}
+          </div>
+        )}
 
         {/* Campo de e-mail */}
         <div style={styles.inputGroup}>
@@ -36,7 +66,29 @@ export default function EsqueceuSenha() {
         </div>
 
         {/* Botão de envio */}
-        <button type="submit" style={styles.button}>Enviar Link</button>
+        <button type="submit" disabled={enviando} style={styles.button}>
+          {enviando ? 'Enviando...' : 'Enviar Link'}
+        </button>
+
+        {/* Exibição do token.
+            O endpoint POST /auth/forgot-password devolve
+            { mensagem, token }. Sem um serviço de e-mail, o token precisa
+            aparecer na tela para o usuário conseguir usá-lo. */}
+        {tokenGerado && (
+          <div style={styles.avisoSucesso}>
+            <p style={styles.desc}>
+              Token gerado. Use-o na próxima tela para definir a nova senha.
+            </p>
+            <code style={styles.token}>{tokenGerado}</code>
+            <button
+              type="button"
+              style={styles.botaoSecundario}
+              onClick={() => navigate('/redefinir-senha', { state: { token: tokenGerado } })}
+            >
+              Ir para a nova senha
+            </button>
+          </div>
+        )}
 
         {/* Link de retorno para o login */}
         <div style={styles.links}>
@@ -55,5 +107,9 @@ const styles = {
   inputGroup: { display: 'flex', flexDirection: 'column', marginBottom: '1rem', textAlign: 'left' },
   input: { padding: '0.5rem', marginTop: '0.25rem', borderRadius: '4px', border: '1px solid #ccc' },
   button: { width: '100%', padding: '0.75rem', backgroundColor: '#dc3545', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', marginTop: '0.5rem' },
+  avisoErro: { backgroundColor: '#f8d7da', color: '#842029', padding: '0.6rem', borderRadius: '4px', fontSize: '0.85rem', marginBottom: '1rem', textAlign: 'left' },
+  avisoSucesso: { backgroundColor: '#d1e7dd', color: '#0f5132', padding: '0.8rem', borderRadius: '4px', fontSize: '0.85rem', marginTop: '1rem', textAlign: 'left' },
+  token: { display: 'block', backgroundColor: '#fff', padding: '0.4rem', borderRadius: '4px', wordBreak: 'break-all', fontSize: '0.75rem' },
+  botaoSecundario: { width: '100%', marginTop: '0.75rem', padding: '0.6rem', backgroundColor: '#198754', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' },
   links: { textAlign: 'center', marginTop: '1rem', fontSize: '0.85rem' }
 };

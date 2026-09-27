@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
-import { useAuth } from '../context/auth-context';
+import { useAuth, ROLE_LABEL } from '../context/auth-context';
 import logoImg from '../assets/logo.png';
 import helpdeskImg from '../assets/helpdesk.png';
 
@@ -10,7 +10,7 @@ export const SidebarLayout = ({ children }) => {
   // Hooks para localização atual, navegação e autenticação
   const location = useLocation();
   const navigate = useNavigate();
-  const { usuario, logout } = useAuth();
+  const { usuario, isTecnico, logout } = useAuth();
 
   // Redireciona para o login se o usuário não estiver autenticado
   useEffect(() => {
@@ -25,7 +25,7 @@ export const SidebarLayout = ({ children }) => {
   }
 
   // Obtém o tipo de usuário do contexto de autenticação
-  const userType = usuario.tipoUsuario;
+  const userType = ROLE_LABEL[usuario.role] || usuario.role;
 
   // Realiza o logout e redireciona para o login
   const handleLogout = () => {
@@ -54,7 +54,7 @@ export const SidebarLayout = ({ children }) => {
           </li>
 
           {/* Links exclusivos do Usuário */}
-          {userType === 'Usuário' && (
+          {!isTecnico && (
             <>
               {/* Link: Meus chamados */}
               <li className="nav-item mb-2">
@@ -72,7 +72,7 @@ export const SidebarLayout = ({ children }) => {
           )}
 
           {/* Links exclusivos do Técnico */}
-          {userType === 'Técnico' && (
+          {isTecnico && (
             <>
               {/* Link: Chamados Técnico */}
               <li className="nav-item mb-2">
@@ -91,7 +91,7 @@ export const SidebarLayout = ({ children }) => {
 
         {/* Link: Sobre */}
         <div className="mt-auto border-top pt-2">
-          <Link to="/sobre" className="nav-link text-white">
+          <Link to="/sobre" className={`nav-link text-white ${location.pathname === '/sobre' ? 'active bg-dark' : ''}`}>
             <i className="bi bi-info-circle me-2"></i> Sobre
           </Link>
         </div>
@@ -102,8 +102,9 @@ export const SidebarLayout = ({ children }) => {
         {/* Cabeçalho com perfil do usuário e botão de logout */}
         <header className="d-flex justify-content-end align-items-center p-3 bg-white border-bottom shadow-sm">
           <div className="text-end me-2">
-            <small className="d-block text-muted">perfil</small>
-            <strong className="text-dark">{userType}</strong>
+            {/* O nome e a role vêm do backend (GET /auth/me), não do e-mail digitado. */}
+            <strong className="text-dark d-block">{usuario.nome}</strong>
+            <small className="text-muted">{userType}</small>
           </div>
           <i className="bi bi-person-circle fs-2 text-secondary me-3"></i>
           <button type="button" onClick={handleLogout} className="btn btn-outline-secondary btn-sm rounded-pill fw-bold">

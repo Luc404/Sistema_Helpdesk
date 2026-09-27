@@ -25,6 +25,8 @@ class RoleEnum(str, enum.Enum):
 
 
 class User(Base):
+    # Nome real da tabela no banco. Precisa casar com as ForeignKey
+    # apontadas para "users.id" nos outros models.
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)              # Identificador único
@@ -32,7 +34,11 @@ class User(Base):
     data_nascimento = Column(Date, nullable=True)                   # Data de nascimento (opcional)
     email = Column(String, unique=True, index=True, nullable=False) # E-mail único (login)
     senha = Column(String, nullable=False)                          # Hash da senha (nunca texto puro)
+    # Situação da conta: ATIVO entra no sistema, INATIVO é bloqueado.
+    # O get_current_user só aceita ATIVO, então desativar equivale a bloquear o login.
     status = Column(SQLEnum(StatusEnum), default=StatusEnum.ATIVO, nullable=False)
+    # Nível de permissão. USUARIO abre e acompanha chamados;
+    # TECNICO também edita chamados, serviços e unidades.
     role = Column(SQLEnum(RoleEnum), default=RoleEnum.USUARIO, nullable=False)
     # Data/hora de criação com fuso horário (UTC por padrão).
     data_criacao = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))

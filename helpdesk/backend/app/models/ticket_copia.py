@@ -10,6 +10,7 @@ from app.database import Base
 
 
 class TicketCopia(Base):
+    # Tabela associativa: liga um ticket a um usuário em cópia.
     __tablename__ = "ticket_copias"
 
     id = Column(Integer, primary_key=True, index=True)                 # Identificador único

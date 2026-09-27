@@ -1,9 +1,35 @@
+# ============================================
+# DEPENDÊNCIAS DO BACKEND (Python)
+# ============================================
+# Instale tudo com:  pip install -r requirements.txt
+# (ou ative o ambiente virtual antes: source venv/bin/activate)
+
+# Framework web: é ele que cria as rotas, valida os dados e gera o /docs.
 fastapi>=0.110.0
+
+# Servidor que executa a aplicação em desenvolvimento.
+# Comando: uvicorn app.main:app --reload
 uvicorn[standard]>=0.28.0
+
+# ORM e acesso ao banco. Usado aqui com SQLite (arquivo helpdesk.db).
 sqlalchemy>=2.0.0
+
+# Validação dos dados de entrada e saída (todas as classes em app/schemas).
 pydantic>=2.0.0
+
+# Leitura do arquivo .env (usado por app/config.py para a SECRET_KEY do JWT).
 pydantic-settings>=2.0.0
+
+# Criação e leitura dos tokens JWT de autenticação.
 python-jose[cryptography]>=3.3.0
+
+# Hash das senhas com bcrypt: nunca gravamos a senha em texto puro.
 passlib[bcrypt]>=1.7.4
+
+# Versão do bcrypt fixada porque as mais novas quebram a leitura dos hashes
+# já gerados pelo passlib (erro "module 'bcrypt' has no attribute '__about__'").
 bcrypt==4.0.1
+
+# Parser de formulários multipart. O FastAPI exige esta biblioteca para
+# processar envios de arquivo/dados de formulário.
 python-multipart>=0.0.9

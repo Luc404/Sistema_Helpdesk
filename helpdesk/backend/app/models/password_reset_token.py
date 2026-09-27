@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 
 
 class PasswordResetToken(Base):
+    # Nome real da tabela no banco.
     __tablename__ = "password_reset_tokens"
 
     id = Column(Integer, primary_key=True, index=True)                 # Identificador único

@@ -17,7 +17,12 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.dependencies import get_current_user, require_roles
 from app.models.user import User, RoleEnum
-from app.schemas.ticket_schema import TicketCreate, TicketUpdate, TicketResponse
+from app.schemas.ticket_schema import (
+    TicketCreate,
+    TicketUpdate,
+    TicketResponse,
+    TicketDetalheResponse,
+)
 from app.services import ticket_service
 
 router = APIRouter(prefix="/tickets", tags=["Tickets"])
@@ -78,6 +83,34 @@ async def list_tickets(db: Session = Depends(get_db),
       401 → usuário não autenticado.
     """
     return ticket_service.get_tickets(db, current_user)
+
+
+# ----------------------------------------------------------
+# ROTA: GET /tickets/detalhes  ->  Listar chamados com nomes
+# ----------------------------------------------------------
+# IMPORTANTE: esta rota precisa ser declarada ANTES de GET /tickets/{ticket_id}.
+# O FastAPI compara as rotas na ordem de declaração; se "/detalhes" viesse
+# depois, ele tentaria converter "detalhes" para int e retornaria 422.
+@router.get("/detalhes", response_model=list[TicketDetalheResponse])
+async def list_tickets_detalhe(db: Session = Depends(get_db),
+                               current_user: User = Depends(get_current_user)):
+    """
+    FUNCIONALIDADE: Lista os chamados com os NOMOS de cliente, técnico,
+    serviço e unidade já resolvidos (o /tickets comum devolve só ids).
+
+    Mesmas regras de visibilidade de GET /tickets:
+      - TÉCNICO: recebe TODOS os chamados.
+      - USUÁRIO: recebe apenas os que abriu + os que está em cópia.
+
+    Por que existe: as tabelas do frontend mostram "Nome do serviço",
+    "Usuário" e "Unidade" em texto. Sem esta rota, o frontend precisaria
+    baixar /servicos, /unidades e /users e cruzar os ids na mão.
+
+    Respostas:
+      200 → lista de chamados com nomes (array JSON).
+      401 → usuário não autenticado.
+    """
+    return ticket_service.get_tickets_detalhe(db, current_user)
 
 
 # ----------------------------------------------------------

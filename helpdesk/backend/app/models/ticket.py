@@ -21,19 +21,27 @@ class StatusEnum(str, enum.Enum):
 
 
 class PrioridadeEnum(str, enum.Enum):
-    """Nível de urgência do chamado."""
-    BAIXA = "BAIXA"
-    MEDIA = "MEDIA"
-    ALTA = "ALTA"
+    """Nível de urgência do chamado.
+
+    A ordem de declaração (BAIXA -> MEDIA -> ALTA) é a mesma usada na
+    interface pelos cards do dashboard e pelo filtro do técnico.
+    """
+    BAIXA = "BAIXA"  # Pode esperar na fila
+    MEDIA = "MEDIA"  # Urgência normal (é o padrão da API)
+    ALTA = "ALTA"    # Precisa de atendimento rápido
 
 
 class Ticket(Base):
+    # Nome real da tabela no banco.
     __tablename__ = "tickets"
 
     id = Column(Integer, primary_key=True, index=True)   # Identificador único
     titulo = Column(String, nullable=False)              # Título/resumo do chamado
     descricao = Column(Text, nullable=False)             # Descrição detalhada do problema
+    # Etapa atual do atendimento. Aberta como ABERTO e só muda via
+    # PUT /tickets/{id}, rota restrita ao perfil TÉCNICO.
     status = Column(SQLEnum(StatusEnum), default=StatusEnum.ABERTO, nullable=False)
+    # Urgência escolhida por quem abriu o chamado.
     prioridade = Column(SQLEnum(PrioridadeEnum), default=PrioridadeEnum.MEDIA, nullable=False)
 
     # Datas de criação e de última atualização (devem ser usadas no update).

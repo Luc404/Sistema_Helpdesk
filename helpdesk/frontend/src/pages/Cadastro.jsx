@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { authService } from '../services/authService';
+import { traduzirErroApi } from '../services/erroApi';
 import logo from '../assets/logo.png';
 import illustration from '../assets/modeloFS.png';
 
@@ -15,28 +17,73 @@ export default function Cadastro() {
     confirmarSenha: ''
   });
 
+  // Mensagens de erro e estado de envio.
+  // Antes esta página usava alert(), que não integra com o layout.
+  const [erro, setErro] = useState('');
+  const [enviando, setEnviando] = useState(false);
+
   // Hook para navegação entre páginas
   const navigate = useNavigate();
 
-  // Manipula alterações nos campos do formulário
+  // Manipula alterações nos campos do formulário.
+  // O mesmo handler atende todos os inputs: o"name" do campo diz qual
+  // propriedade do objeto formData deve ser atualizada.
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData({
-      ...formData,
-      [name]: type === 'checkbox' ? checked : value
-    });
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
   };
 
   // Valida e envia o formulário de cadastro
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
+    // Evita o reload padrão do navegador no envio do formulário.
     e.preventDefault();
-    // Verifica se as senhas coincidem
+    setErro('');
+
+    // Confere se as senhas batem antes de chamar a API
     if (formData.senha !== formData.confirmarSenha) {
-      alert("As senhas não coincidem!");
+      setErro('As senhas não coincidem.');
       return;
     }
-    alert(`Conta criada com sucesso para: ${formData.primeiroNome}`);
-    navigate('/'); // Redireciona para o login após cadastro
+
+    // Regra mínima de tamanho de senha, validada aqui para não
+    // gastar uma ida ao servidor com um dado que já sabemos inválido.
+    if (formData.senha.length < 6) {
+      setErro('A senha precisa ter ao menos 6 caracteres.');
+      return;
+    }
+
+    setEnviando(true);
+
+    try {
+      // A API (UserCreate) espera um campo "nome" único, e não
+      // "primeiroNome"/"ultimoNome" separados como no formulário.
+      // Também não existe "unidade_id" aqui: o usuário é criado sem
+      // unidade e a role padrão é sempre USUARIO.
+      // O metodo se chama "cadastro" (ver authService.ts:35).
+      // Escrever "cadastrar" quebrava a tela com
+      // "TypeError: authService.cadastrar is not a function".
+      await authService.cadastro({
+        nome: `${formData.primeiroNome} ${formData.ultimoNome}`.trim(),
+        email: formData.email,
+        senha: formData.senha,
+        data_nascimento: formData.dataNascimento || null,
+      });
+
+      navigate('/');
+    } catch (falha) {
+      // Antes esta tela mostrava sempre "Nao foi possivel criar a conta",
+      // tanto para e-mail duplicado (409) quanto para backend fora do ar,
+      // e o erro real era descartado sem aparecer no console.
+      // O traduzirErroApi separa os dois casos e registra o log completo.
+      const { texto, mostrarDetalhe } = traduzirErroApi(falha, 'criar a conta');
+
+      setErro(texto);
+
+      // Detalhe tecnico no console, util para diagnosticar em segundos
+      console.error('[Cadastro] detalhe do erro:', mostrarDetalhe);
+    } finally {
+      setEnviando(false);
+    }
   };
 
   return (
@@ -62,6 +109,13 @@ export default function Cadastro() {
             <h1 className="text-center mb-4 fw-bold">Registrar - se</h1>
             
             <form onSubmit={handleSubmit}>
+              {/* Mensagem de erro devolvida pela API ou pela validação local */}
+              {erro && (
+                <div className="alert alert-danger py-2 small" role="alert">
+                  {erro}
+                </div>
+              )}
+
               {/* Campo: Primeiro nome */}
               <div className="mb-2">
                 <input
@@ -149,8 +203,8 @@ export default function Cadastro() {
                   Voltar
                 </button>
 
-                <button type="submit" className="btn btn-light rounded-pill px-5 py-2 fw-bold text-secondary text-uppercase">
-                  Criar
+                <button type="submit" disabled={enviando} className="btn btn-light rounded-pill px-5 py-2 fw-bold text-secondary text-uppercase">
+                  {enviando ? 'Criando...' : 'Criar'}
                 </button>
               </div>
             </form>

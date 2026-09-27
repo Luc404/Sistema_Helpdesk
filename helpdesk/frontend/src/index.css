@@ -1,77 +1,125 @@
+/* ============================================
+   ESTILOS GLOBAIS E VARIÁVEIS DE TEMA
+   ============================================
+   Este arquivo entra em cena em main.jsx (import './index.css') e define
+   a base visual da aplicação.
+
+   O que ele realmente controla hoje:
+     - As variáveis CSS (--accent, --bg, --shadow...) usadas em App.css.
+     - A fonte base e o tamanho do texto raiz.
+     - A caixa "#root", que é o container onde o React monta as telas.
+
+   Observação importante: o layout do HelpDesk em si é feito com classes
+   do Bootstrap (bg-secondary, card, d-flex...), carregado em main.jsx.
+   Boa parte das regras abaixo veio do template inicial do Vite e hoje
+   não afeta as telas do sistema — mas as variáveis de tema são
+   referenciadas por App.css e podem ser reaproveitadas.            */
+
+/* ------------------------------------------------------------
+   VARIÁVEIS DE TEMA (:root) + tipografia base
+   As variáveis CSS funcionam como constantes: mudam o valor em um
+   lugar só e tudo que as usa muda junto (inclusive o tema escuro
+   abaixo, que sobrescreve as mesmas chaves).
+   ------------------------------------------------------------ */
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
+  /* Cores de texto e fundo do tema claro (padrão) */
+  --text: #6b6375;       /* Cor padrão do texto comum */
+  --text-h: #08060d;     /* Cor dos títulos (h1, h2) */
+  --bg: #fff;            /* Fundo da página */
+  --border: #e5e4e7;     /* Cor das bordas e divisórias */
+  --code-bg: #f4f3ec;    /* Fundo dos blocos <code> */
+  --accent: #aa3bff;     /* Cor de destaque (roxo do template) */
+  --accent-bg: rgba(170, 59, 255, 0.1);     /* Fundo translúcido do destaque */
+  --accent-border: rgba(170, 59, 255, 0.5); /* Borda do destaque */
+  --social-bg: rgba(244, 243, 236, 0.5);   /* Fundo dos botões de link */
+  /* Sombra padrão, com duas camadas (uma difusa e uma mais nítida). */
   --shadow:
     rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
 
+  /* Famílias de fonte: sans para o texto, heading para títulos,
+     mono para código. */
   --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
   --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
   --mono: ui-monospace, Consolas, monospace;
 
+  /* Base da tipografia: fonte, tamanho (18px) e entrelinha (145%). */
   font: 18px/145% var(--sans);
   letter-spacing: 0.18px;
-  color-scheme: light dark;
+  color-scheme: light dark;   /* Diz ao navegador que os dois temas existem */
   color: var(--text);
   background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  font-synthesis: none;       /* Não "engessa" itálico/bold artificial */
+  text-rendering: optimizeLegibility;  /* Liga a suavização de texto */
+  -webkit-font-smoothing: antialiased;  /* Suavização no Chrome/Safari */
+  -moz-osx-font-smoothing: grayscale;   /* Suavização no Firefox */
 
+  /* Em telas menores, o texto raiz diminui para caber mais conteúdo. */
   @media (max-width: 1024px) {
     font-size: 16px;
   }
 }
 
+/* ------------------------------------------------------------
+   TEMA ESCURO
+   Ativado quando o sistema operacional do usuário está em modo
+   escuro. Sobrescreve apenas as VARIÁVEIS: como todas as regras
+   usam var(--...), a troca de tema acontece inteira aqui.
+   ------------------------------------------------------------ */
 @media (prefers-color-scheme: dark) {
   :root {
-    --text: #9ca3af;
+    --text: #9ca3af;       /* Texto claro para contraste no fundo escuro */
     --text-h: #f3f4f6;
     --bg: #16171d;
     --border: #2e303a;
     --code-bg: #1f2028;
-    --accent: #c084fc;
+    --accent: #c084fc;     /* Roxo mais claro, legível no escuro */
     --accent-bg: rgba(192, 132, 252, 0.15);
     --accent-border: rgba(192, 132, 252, 0.5);
     --social-bg: rgba(47, 48, 58, 0.5);
+    /* Sombra mais forte, para fazer sentido sobre fundo escuro. */
     --shadow:
       rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
   }
 
+  /* Inverte a cor dos ícones de link para não sumirem no fundo escuro. */
   #social .button-icon {
     filter: invert(1) brightness(2);
   }
 }
 
+/* Remove a margem padrão do <body> (8px do navegador), senão
+   o container #root não encosta nas bordas da tela. */
 body {
   margin: 0;
 }
 
+/* ------------------------------------------------------------
+   CONTAINER #root
+   É o elemento do index.html onde o React monta a aplicação
+   (ver createRoot em main.jsx). Como dimensão, ele segura a altura
+   mínima da tela: é daqui que o layout de altura total (vh-100)
+   das telas com sidebar é medido.
+   ------------------------------------------------------------ */
 #root {
   width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
+  max-width: 100%;      /* Nunca ultrapassa a largura da janela */
+  margin: 0 auto;       /* Centraliza horizontalmente */
   text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
+  border-inline: 1px solid var(--border);  /* Bordas laterais sutis */
+  min-height: 100svh;   /* svh = altura da menor janela visível */
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
 }
 
+/* Títulos herdam a fonte de títulos, com peso mais leve que o padrão. */
 h1,
 h2 {
   font-family: var(--heading);
   font-weight: 500;
   color: var(--text-h);
 }
+
 
 h1 {
   font-size: 56px;
@@ -91,10 +139,14 @@ h2 {
     font-size: 20px;
   }
 }
+
+/* Parágrafos não recebem margem automática (a distância passa a ser
+   controlada pelo container, e não pelo <p>). */
 p {
   margin: 0;
 }
 
+/* Elementos de código e contadores usam fonte monoespaçada. */
 code,
 .counter {
   font-family: var(--mono);

@@ -30,8 +30,8 @@ def create_user(db: Session, user_data: UserCreate, role=None) -> User:
         role=role,
     )
     db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
+    db.commit()        # Grava de fato e atribui o id gerado pelo banco
+    db.refresh(new_user)  # Recarrega para devolver o usuário com todos os campos
     return new_user
 
 
@@ -78,18 +78,28 @@ def update_user(db: Session, user_id: int, user_data: UserUpdate) -> User:
     - Se `senha` for enviada, é hasheada antes de salvar.
     """
     user = get_user(db, user_id)
+
+    # Só os campos realmente enviados entram na troca (update parcial).
     updates = {k: v for k, v in user_data.model_dump(exclude_unset=True).items() if v is not None}
+
+    # A senha chega em texto puro e precisa ser hasheada antes de gravar.
     if "senha" in updates:
         updates["senha"] = hash_password(updates["senha"])
+
     for key, value in updates.items():
         setattr(user, key, value)
+
     db.commit()
     db.refresh(user)
     return user
 
 
 def delete_user(db: Session, user_id: int) -> None:
-    """Remove um usuário do banco."""
+    """Remove um usuário do banco.
+
+    Atenção: chamados e cópias que dependem desse usuário podem bloquear
+    a remoção por causa das chaves estrangeiras.
+    """
     user = get_user(db, user_id)
     db.delete(user)
     db.commit()

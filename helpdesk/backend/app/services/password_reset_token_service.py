@@ -24,10 +24,14 @@ def create_reset_token(db: Session, email: str) -> str:
     if not user:
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
 
+    # secrets.token_urlsafe gera um token aleatório e criptograficamente
+    # seguro (diferente de um uuid comum, que é previsível).
     token = secrets.token_urlsafe(32)
+
     reset_token = PasswordResetToken(
         user_id=user.id,
         token=token,
+        # Validade de 2 horas a partir de agora.
         expira_em=datetime.now(timezone.utc) + timedelta(hours=2),
     )
     db.add(reset_token)
@@ -41,6 +45,8 @@ def reset_password(db: Session, token: str, nova_senha: str) -> User:
     - Tokens inválidos ou expirados geram erro (400).
     - Após o uso, o token é apagado (não pode ser reutilizado).
     """
+    # Import local (e não no topo do arquivo) para evitar dependência
+    # circular entre o service e o módulo de segurança.
     from app.security import hash_password
 
     reset_token = db.query(PasswordResetToken).filter(PasswordResetToken.token == token).first()
@@ -49,11 +55,14 @@ def reset_password(db: Session, token: str, nova_senha: str) -> User:
 
     # Compara a validade do token com o horário atual (expira_em).
     if reset_token.expira_em.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
+        # Apaga o token expirado para não acumular lixo no banco.
         db.delete(reset_token)
         db.commit()
         raise HTTPException(status_code=400, detail="Token expirado")
 
     user = db.query(User).filter(User.id == reset_token.user_id).first()
+
+    # Grava a nova senha (hasheada) e invalida o token na mesma transação.
     user.senha = hash_password(nova_senha)
     db.delete(reset_token)  # Token de uso único
     db.commit()

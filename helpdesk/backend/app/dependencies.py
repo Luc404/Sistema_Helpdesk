@@ -64,6 +64,11 @@ def require_roles(*roles: RoleEnum):
     Retorna 403 se o usuário logado não tiver o papel exigido.
     """
     def checker(current_user: User = Depends(get_current_user)) -> User:
+        """
+        Função interna devolvida por require_roles. É ela que o FastAPI
+        executa de verdade como dependência da rota, e roda depois do
+        get_current_user (por isso já recebe o usuário logado pronto).
+        """
         if current_user.role not in roles:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,

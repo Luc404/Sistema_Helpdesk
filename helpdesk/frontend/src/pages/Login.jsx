@@ -1,28 +1,48 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/auth-context';
+
 import logo from '../assets/logo.png';
 import illustration from '../assets/modeloFS.png';
 
 // Página de login do sistema
 export default function Login() {
   // Estado dos campos de e-mail e senha
-  const [email, setEmail] = useState('');
-  const [senha, setSenha] = useState('');
+  const [email, setEmail] = useState('');   // Digitado no primeiro input
+  const [senha, setSenha] = useState('');   // Digitado no campo de senha
+  const [erro, setErro] = useState('');     // Mensagem exibida no alert vermelho
+  const [carregando, setCarregando] = useState(false); // Desabilita o botão durante o envio
 
   // Hook para navegação e contexto de autenticação
+  // navigate() troca de rota; "login" vem do AuthProvider e já persiste
+  // o token no navegador (veja context/AuthProvider.jsx).
   const navigate = useNavigate();
   const { login } = useAuth();
 
   // Valida as credenciais e realiza o login
-  const handleSubmit = (e) => {
+  // Disparado pelo onSubmit do <form>, ou seja, ao clicar em Login
+  // ou ao pressionar Enter dentro de qualquer campo.
+  const handleSubmit = async (e) => {
+    // Impede o recarregamento da página que o navegador faria por padrão
+    // ao enviar um <form> comum.
     e.preventDefault();
-    // Determina o tipo de usuário baseado no e-mail
-    // Se o e-mail contém "tecnico", é técnico; caso contrário, é usuário comum
-    const tipoUsuario = email.toLowerCase().includes('tecnico') ? 'Técnico' : 'Usuário';
-    alert(`Acessando conta: ${email} (${tipoUsuario})`);
-    login(email, tipoUsuario);  // Registra o usuário e tipo no contexto de autenticação
-    navigate('/home');          // Redireciona para a página inicial
+    setErro('');
+    setCarregando(true);
+
+    try {
+      // O login delega ao contexto, que chama o backend e guarda token + role
+      const user = await login(email, senha);
+
+      // Cada role cai na sua página inicial
+      navigate(user.role === 'TECNICO' ? '/chamados' : '/meus-chamados');
+    } catch (error) {
+      // 401 (credenciais erradas) e 403 (conta inativa) trazem a mensagem
+      // do backend no campo "detail".
+      setErro(error.response?.data?.detail || 'Email ou senha inválidos.');
+    } finally {
+      // Roda tanto no sucesso quanto no erro: o botão volta ao normal.
+      setCarregando(false);
+    }
   };
 
   return (
@@ -79,10 +99,17 @@ export default function Login() {
                 </Link>
               </div>
 
+              {/* Mensagem de erro devolvida pelo backend */}
+              {erro && (
+                <div className="alert alert-danger py-2 small" role="alert">
+                  {erro}
+                </div>
+              )}
+
               {/* Botões de ação: Login e Registrar-se */}
               <div className="d-flex gap-3">
-                <button type="submit" className="btn btn-secondary btn-lg rounded-pill w-50 py-2 fw-bold text-uppercase">
-                  Login
+                <button type="submit" disabled={carregando} className="btn btn-secondary btn-lg rounded-pill w-50 py-2 fw-bold text-uppercase">
+                  {carregando ? 'Entrando...' : 'Login'}
                 </button>
                 <button 
                   type="button" 

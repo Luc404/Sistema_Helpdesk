@@ -1,13 +1,48 @@
 <!doctype html>
+<!--
+  ============================================
+  PÁGINA HTML RAIZ (ponto de montagem do React)
+  ============================================
+  Este é o ÚNICO arquivo HTML do projeto: o Vite entrega as demais telas
+  renderizadas pelo React, então não existe um .html por página.
+
+  O fluxo de montagem é:
+    1. O navegador abre este arquivo (gerado pelo Vite a partir de index.html).
+    2. A tag <script type="module"> baixa o bundle e executa frontend/src/main.jsx.
+    3. O main.jsx cria a aplicação React dentro da <div id="root">.
+    4. A partir daí, quem controla a URL é o React Router (veja App.jsx).
+-->
 <html lang="en">
   <head>
+    <!--
+      Codificação UTF-8: obrigatória para os acentos do português
+      (ex.: "Chamados", "Não foi possível", "Concluído").
+    -->
     <meta charset="UTF-8" />
+
+    <!-- Ícone da aba do navegador. O arquivo fica em public/favicon.svg. -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!--
+      Responsividade: a largura segue a do dispositivo e o zoom inicial
+      é 1.0, para o layout não "quebrar" ao abrir em celular.
+    -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
     <title>helpdesk</title>
   </head>
   <body>
+    <!--
+      Ponto de montagem do React. Está vazio no HTML de propósito: o React
+      preenche este elemento em tempo de execução (createRoot em main.jsx).
+    -->
     <div id="root"></div>
+
+    <!--
+      Script de entrada da aplicação. O caminho é relativo à raiz do projeto
+      porque o Vite usa este arquivo como index durante o desenvolvimento
+      (npm run dev) e como base no build de produção (npm run build).
+    -->
     <script type="module" src="frontend/src/main.jsx"></script>
   </body>
 </html>
