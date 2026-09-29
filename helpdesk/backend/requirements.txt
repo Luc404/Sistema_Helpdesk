@@ -33,3 +33,10 @@ bcrypt==4.0.1
 # Parser de formulários multipart. O FastAPI exige esta biblioteca para
 # processar envios de arquivo/dados de formulário.
 python-multipart>=0.0.9
+
+# Driver de conexão com o PostgreSQL (usado pelo SQLAlchemy quando
+# DATABASE_URL começa com "postgresql+psycopg2://").
+psycopg2-binary>=2.9
+
+# Validação de e-mail nos schemas (EmailStr do pydantic).
+email-validator>=2.0

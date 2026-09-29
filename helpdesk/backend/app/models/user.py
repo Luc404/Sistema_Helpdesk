@@ -35,11 +35,11 @@ class User(Base):
     email = Column(String, unique=True, index=True, nullable=False) # E-mail único (login)
     senha = Column(String, nullable=False)                          # Hash da senha (nunca texto puro)
     # Situação da conta: ATIVO entra no sistema, INATIVO é bloqueado.
-    # O get_current_user só aceita ATIVO, então desativar equivale a bloquear o login.
-    status = Column(SQLEnum(StatusEnum), default=StatusEnum.ATIVO, nullable=False)
+    # O name="user_status" dá um nome único ao tipo enum no PostgreSQL.
+    status = Column(SQLEnum(StatusEnum, name="user_status"), default=StatusEnum.ATIVO, nullable=False)
     # Nível de permissão. USUARIO abre e acompanha chamados;
     # TECNICO também edita chamados, serviços e unidades.
-    role = Column(SQLEnum(RoleEnum), default=RoleEnum.USUARIO, nullable=False)
+    role = Column(SQLEnum(RoleEnum, name="user_role"), default=RoleEnum.USUARIO, nullable=False)
     # Data/hora de criação com fuso horário (UTC por padrão).
     data_criacao = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 

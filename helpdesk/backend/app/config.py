@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     # Tempo de validade do token de acesso em minutos.
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
 
+    # URL de conexão com o banco (o .env sobrescreve este padrão).
+    DATABASE_URL: str = "sqlite:///./helpdesk.db"
+
     class Config:
         # Indica de qual arquivo ler as variáveis (sobrescrevem os padrões acima).
         env_file = ".env"
