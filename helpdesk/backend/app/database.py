@@ -17,7 +17,9 @@ SQLALCHEMY_DATABASE_URL = settings.DATABASE_URL
 connect_args = {"check_same_thread": False} if SQLALCHEMY_DATABASE_URL.startswith("sqlite") else {}
 
 # Cria a engine de conexão.
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args=connect_args)
+# pool_pre_ping=True testa a conexão antes de usar, evitando erro quando o
+# banco na nuvem "dorme" por inatividade.
+engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args=connect_args, pool_pre_ping=True)
 
 # "Fábrica" de sessões: cada sessão representa uma conexão/transação com o banco.
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
