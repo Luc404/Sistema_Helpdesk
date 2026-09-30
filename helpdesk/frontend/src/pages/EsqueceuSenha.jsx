@@ -43,7 +43,7 @@ export default function EsqueceuSenha() {
   return (
     <div style={styles.container}>
       {/* Card de recuperação de senha */}
-      <form onSubmit={handleSubmit} style={styles.card}>
+      <form onSubmit={handleSubmit}>
         <h2>Recuperar Senha</h2>
         <p style={styles.desc}>Digite seu e-mail para receber um link de redefinição.</p>
 
@@ -58,6 +58,9 @@ export default function EsqueceuSenha() {
           <label>E-mail</label>
           <input
             type="email"
+            name="email"
+            className="form-control rounded-pill text-center py-2 border-0"
+            placeholder="E-mail"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -78,7 +81,8 @@ export default function EsqueceuSenha() {
           <div style={styles.avisoSucesso}>
             <p style={styles.desc}>
               Token gerado. Use-o na próxima tela para definir a nova senha.
-            </p>
+            </p>            style={styles.input}
+ 
             <code style={styles.token}>{tokenGerado}</code>
             <button
               type="button"
@@ -91,8 +95,14 @@ export default function EsqueceuSenha() {
         )}
 
         {/* Link de retorno para o login */}
-        <div style={styles.links}>
-          <Link to="/">Voltar para o Login</Link>
+        <div className="d-flex align-items-center justify-content-between mt-4">
+          <button   
+            type="button"
+            className="btn btn-light rounded-pill px-5 py-2 fw-bold text-secondary text-uppercase"
+            onClick={() => navigate('/')}
+            >
+            Voltar
+          </button>
         </div>
       </form>
     </div>
