@@ -88,3 +88,53 @@ export function contarChamados(chamados) {
     concluidos: chamados.filter((c) => c.status === 'CONCLUIDO').length,
   };
 }
+
+// ------------------------------------------------------------
+// SENHA
+// ------------------------------------------------------------
+// Tamanho mínimo da senha. O valor é uma CÓPIA do que o backend exige
+// (SENHA_MINIMO_CARACTERES em app/config.py, padrão 6): aqui serve só
+// para dar o retorno rápido na tela, sem gastar uma ida ao servidor.
+// Se o backend mudar a regra, este número precisa ser atualizado junto —
+// o backend continua sendo quem decide de verdade.
+export const SENHA_MINIMO_CARACTERES = 6;
+
+// Mensagem de erro usada quando a senha não atinge o mínimo.
+export const ERRO_SENHA_CURTA = `A senha precisa ter ao menos ${SENHA_MINIMO_CARACTERES} caracteres.`;
+
+// Confere se a senha nova tem tamanho suficiente.
+// Usada tanto no cadastro (Cadastro.jsx) quanto na redefinição
+// (RedefinirSenha.jsx), para os dois formulários cobrarem a mesma coisa.
+export function senhaAtendeTamanho(senha) {
+  return Boolean(senha) && senha.trim().length >= SENHA_MINIMO_CARACTERES;
+}
+
+// ------------------------------------------------------------
+// ÍCONES DE SERVIÇO
+// ------------------------------------------------------------
+// O campo "icone" do serviço é o nome de uma classe do Bootstrap Icons
+// (ex.: "bi-easel"), usada no card da tela inicial (pages/Home.jsx).
+//
+// Em vez de o técnico ter que lembrar o nome exato da classe, esta lista
+// oferece as opções mais comuns. Nada impede digitar uma classe fora
+// daqui: o campo do formulário aceita texto livre, e o backend só exige
+// que "icone" seja uma string (app/schemas/servico_schema.py).
+//
+// O formato de cada item:
+//   { valor, rotulo }  ->  "valor" vai no banco, "rotulo" aparece no <select>.
+export const ICONES_SERVICO = [
+  { valor: 'bi-easel', rotulo: 'Equipamentos (monitor, notebook)' },
+  { valor: 'bi-tools', rotulo: 'Manutenção' },
+  { valor: 'bi-cpu', rotulo: 'Suporte de TI' },
+  { valor: 'bi-wifi', rotulo: 'Rede / internet' },
+  { valor: 'bi-printer', rotulo: 'Impressão' },
+  { valor: 'bi-envelope', rotulo: 'E-mail' },
+  { valor: 'bi-people', rotulo: 'Usuários / contas' },
+  { valor: 'bi-building', rotulo: 'Predial / estrutura' },
+  { valor: 'bi-mortarboard', rotulo: 'Treinamento' },
+  { valor: 'bi-file-earmark-text', rotulo: 'Documentos / contratos' },
+  { valor: 'bi-database', rotulo: 'Banco de dados' },
+  { valor: 'bi-shield-lock', rotulo: 'Segurança' },
+  { valor: 'bi-sliders', rotulo: 'Configuração' },
+  { valor: 'bi-plug', rotulo: 'Outros' },
+];

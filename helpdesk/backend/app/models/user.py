@@ -59,3 +59,9 @@ class User(Base):
     copias_ticket = relationship(
         "TicketCopia", back_populates="user", foreign_keys="TicketCopia.user_id"
     )
+    # Tokens de redefinição de senha pertencentes a este usuário.
+    # Permite listar/revogar os tokens direto pelo usuário, sem consultar
+    # a tabela password_reset_tokens (ver password_reset_token_service.py).
+    tokens_recuperacao = relationship(
+        "PasswordResetToken", back_populates="user", cascade="all, delete-orphan"
+    )

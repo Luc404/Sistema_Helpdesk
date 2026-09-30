@@ -1,3 +1,18 @@
+// ============================================
+// TELA: MEUS CHAMADOS (perfil USUÁRIO)
+// ============================================
+// Lista os chamados abertos pelo usuário logado. A rota é "/meus-chamados"
+// e fica atrás de RotaProtegida, então exige sessão ativa.
+//
+// Diferença para a tela do técnico: aqui o status é somente leitura.
+// Alterar exigiria o perfil TÉCNICO — o PUT /tickets/{id} devolve 403
+// para usuário comum (app/routers/ticket_router.py).
+//
+// Observação sobre a listagem: a API já devolve somente o que o usuário
+// pode ver (os chamados que ele abriu E os que está em cópia, via
+// ticket_service.query_visiveis). Filtrar por "cliente_id" no navegador
+// esconderia justamente os chamados em cópia, por isso não é feito.
+
 import { useCallback, useMemo, useState } from 'react';
 import { SidebarLayout } from './SidebarLayout';
 import { useRequisicao } from '../hooks/useRequisicao';

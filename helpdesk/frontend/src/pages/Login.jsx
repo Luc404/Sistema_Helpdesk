@@ -1,3 +1,14 @@
+// ============================================
+// TELA: LOGIN
+// ============================================
+// Ponto de entrada do sistema. É a única rota "/" do App.jsx e fica
+// protegida por RotaPublica: quem já está logado é redirecionado direto
+// para a sua área (/chamados para técnico, /meus-chamados para usuário).
+//
+// A tela não chama a API diretamente: o submit delega para o "login" do
+// AuthProvider, que é quem chama o backend e guarda o token no
+// localStorage (ver context/AuthProvider.jsx e services/authStorage.ts).
+
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/auth-context';

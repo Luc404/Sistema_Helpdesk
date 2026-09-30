@@ -1,3 +1,15 @@
+// ============================================
+// LAYOUT PRINCIPAL (sidebar + área de conteúdo)
+// ============================================
+// Envolve TODAS as telas internas do sistema. Não é uma rota: cada página
+// protegida (Home, MeusChamadosUsuario, CriarChamado, ChamadosTecnico e
+// Sobre) renderiza <SidebarLayout>{conteúdo}</SidebarLayout> por conta
+// própria, e ele desenha o menu lateral, o cabeçalho com o botão de sair
+// e a área onde o conteúdo da página aparece.
+//
+// O menu muda conforme o perfil: o usuário comum vê "Meus chamados" e
+// "Novo chamado"; o técnico vê "Chamados Técnico".
+
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useAuth, ROLE_LABEL } from '../context/auth-context';
@@ -78,6 +90,16 @@ export const SidebarLayout = ({ children }) => {
               <li className="nav-item mb-2">
                 <Link to="/chamados" className={`nav-link text-white ${location.pathname === '/chamados' ? 'active bg-dark' : ''}`}>
                   <i className="bi bi-clipboard me-2 fs-5"></i> Chamados Técnico
+                </Link>
+              </li>
+
+              {/* Link: Serviços.
+                  Leva para a MESMA rota /chamados, que é onde fica o
+                  formulário de cadastro de serviços. Precisa do ?secao=servicos
+                  para o bloco já abrir aberto ao chegar pelo link. */}
+              <li className="nav-item mb-2">
+                <Link to="/chamados?secao=servicos" className={`nav-link text-white ${location.search.includes('secao=servicos') ? 'active bg-dark' : ''}`}>
+                  <i className="bi bi-tools me-2 fs-5"></i> Serviços
                 </Link>
               </li>
             </>

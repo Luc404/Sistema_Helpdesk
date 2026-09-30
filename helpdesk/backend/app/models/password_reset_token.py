@@ -20,4 +20,4 @@ class PasswordResetToken(Base):
     expira_em = Column(DateTime(timezone=True), nullable=False)        # Data/hora de expiração
 
     # Relacionamento: permite acessar o usuário dono do token.
-    user = relationship("User", foreign_keys=[user_id])
+    user = relationship("User", back_populates="tokens_recuperacao", foreign_keys=[user_id])

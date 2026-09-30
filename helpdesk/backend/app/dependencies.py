@@ -27,6 +27,8 @@ def get_current_user(
     Usada nos routers como: current_user: User = Depends(get_current_user).
     Lança 401 se não houver token válido ou se o usuário estiver inativo.
     """
+    # O mesmo erro para token ausente, inválido, vencido ou usuário
+    # inexistente: mensagens diferentes ajudariam a sondar o sistema.
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Não foi possível validar as credenciais",
@@ -37,20 +39,32 @@ def get_current_user(
     if credentials is None:
         raise credentials_exception
 
-    # Decodifica o token e extrai o id do usuário (campo "sub").
+    # Decodifica o token (a validação da assinatura e da expiração já
+    # acontece dentro de decode_access_token) e extraz o id do usuário,
+    # que foi gravado no campo "sub" no momento do login.
     payload = decode_access_token(credentials.credentials)
+
+    # Token sem "sub" não identifica ninguém: nega o acesso.
     if payload is None or "sub" not in payload:
         raise credentials_exception
 
     try:
+        # O "sub" é gravado como texto (o padrão do JWT), então precisa
+        # ser convertido de volta para inteiro.
         user_id = int(payload["sub"])
     except (TypeError, ValueError):
+        # "sub" existe mas não é um número: token forjado ou corrompido.
         raise credentials_exception
 
     # Busca o usuário no banco e verifica se está ativo.
+    # Conferir o status aqui (e não só no login) garante que uma conta
+    # desativada no meio da sessão perca o acesso imediatamente.
     user = db.query(User).filter(User.id == user_id, User.status == StatusEnum.ATIVO).first()
+
+    # Token válido apontando para um usuário que não existe (ou inativo).
     if user is None:
         raise credentials_exception
+
     return user
 
 
@@ -70,9 +84,14 @@ def require_roles(*roles: RoleEnum):
         get_current_user (por isso já recebe o usuário logado pronto).
         """
         if current_user.role not in roles:
+            # 403 = autenticado, mas sem permissão. O 401 ficaria para
+            # "não está logado", que é tratado logo acima, no
+            # get_current_user.
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Você não tem permissão para executar esta ação",
             )
+
         return current_user
+
     return checker

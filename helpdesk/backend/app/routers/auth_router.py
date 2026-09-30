@@ -17,7 +17,12 @@ from app.dependencies import get_current_user
 from app.models.user import User
 from app.schemas.user_schema import UserCreate, UserLogin, UserResponse, TokenResponse
 from app.security import create_access_token
-from app.schemas.password_reset_token_schema import PasswordResetRequest, PasswordResetConfirm
+from app.schemas.password_reset_token_schema import (
+    PasswordResetRequest,
+    PasswordResetResponse,
+    PasswordResetConfirm,
+    PasswordResetTokenStatus,
+)
 from app.services import user_service, password_reset_token_service
 
 router = APIRouter(prefix="/auth", tags=["Autenticação"])
@@ -109,26 +114,62 @@ async def me(current_user: User = Depends(get_current_user)):
 # ----------------------------------------------------------
 # ROTA: POST /auth/forgot-password  ->  Solicitar redefinição
 # ----------------------------------------------------------
-@router.post("/forgot-password")
+@router.post("/forgot-password", response_model=PasswordResetResponse)
 async def forgot_password(data: PasswordResetRequest, db: Session = Depends(get_db)):
     """
-    FUNCIONALIDADE: Gera um token para redefinir a senha de um usuário.
+    FUNCIONALIDADE: Gera um token para redefinir a senha de um usuário (1ª etapa).
 
     Body esperado (JSON):
         { "email": "lucas@teste.com" }
 
     O que acontece por dentro:
-      1. Verifica se existe um usuário ATIVO com esse e-mail.
-      2. Gera um token aleatório com validade de 2 horas
-         (password_reset_token_service.create_reset_token).
-      3. Retorna o token no corpo — em produção ele seria enviado por e-mail.
+      1. Apaga da tabela os tokens que já venceram (faxina).
+      2. Procura um usuário ATIVO com esse e-mail.
+      3. Se encontrar, revoga os tokens anteriores dele e cria um novo,
+         válido por PASSWORD_RESET_EXPIRE_MINUTES minutos (padrão: 120).
+      4. Devolve o link de redefinição para o frontend exibir.
+
+    SEGURANÇA (anti-enumeração de contas):
+      A resposta é SEMPRE 200 com a mesma mensagem, exista o e-mail ou não.
+      Antes, esta rota devolvia 404 para e-mails desconhecidos, o que
+      permitia a um atacante descobrir quais contas estão cadastradas
+      comparando 200 x 404. O campo "token" vem null nesse caso.
 
     Respostas:
-      200 → { mensagem, token }.
-      404 → usuário não encontrado / inativo.
+      200 → { mensagem, token, link } (token/link só existem se a conta existir).
+      422 → e-mail mal formatado.
     """
-    token = password_reset_token_service.create_reset_token(db, data.email)
-    return {"mensagem": "Token de redefinição gerado", "token": token}
+    return password_reset_token_service.create_reset_token(db, data.email)
+
+
+# ----------------------------------------------------------
+# ROTA: GET /auth/reset-password/validar  ->  Conferir o token
+# ----------------------------------------------------------
+# ATENÇÃO À ORDEM: esta rota é declarada ANTES de qualquer rota com
+# caminho variável em "/reset-password/...", senão o FastAPI tentaria
+# interpretar "validar" como parâmetro.
+@router.get("/reset-password/validar", response_model=PasswordResetTokenStatus)
+async def validar_token_reset(token: str, db: Session = Depends(get_db)):
+    """
+    FUNCIONALIDADE: Informa se o token de redefinição ainda é válido.
+
+    Serve para a tela /redefinir-senha avisar o usuário assim que ela abre
+    (link vencido, já utilizado, nunca existiu), em vez de só descobrir
+    o problema depois de ele digitar a senha nova.
+
+    Query esperado (? na URL):
+        ?token=abc123
+
+    O que acontece por dentro:
+      - Busca o token na tabela password_reset_tokens.
+      - Confere se ele existe e se ainda não venceu o prazo.
+      - NÃO apaga nada e NÃO exige login.
+
+    Respostas:
+      200 → { valido: true }  ou  { valido: false, mensagem: "..." }.
+             Nunca devolve erro, nem para token inválido.
+    """
+    return password_reset_token_service.obter_situacao_token(db, token)
 
 
 # ----------------------------------------------------------
@@ -137,7 +178,7 @@ async def forgot_password(data: PasswordResetRequest, db: Session = Depends(get_
 @router.post("/reset-password", response_model=UserResponse)
 async def reset_password(data: PasswordResetConfirm, db: Session = Depends(get_db)):
     """
-    FUNCIONALIDADE: Troca a senha usando o token recebido por e-mail.
+    FUNCIONALIDADE: Troca a senha usando o token recebido (2ª etapa).
 
     Body esperado (JSON):
         {
@@ -146,14 +187,16 @@ async def reset_password(data: PasswordResetConfirm, db: Session = Depends(get_d
         }
 
     O que acontece por dentro:
-      1. Busca o token na tabela password_reset_tokens.
-      2. Valida se o token existe e ainda não expirou.
-      3. Gera o hash da nova senha e salva no usuário.
-      4. Apaga o token (uso único — ele não pode ser reutilizado).
+      1. Valida a força da senha nova (mínimo de SENHA_MINIMO_CARACTERES).
+      2. Busca o token na tabela password_reset_tokens.
+      3. Valida se o token existe e ainda não expirou.
+      4. Gera o hash da nova senha e salva no usuário.
+      5. Apaga o token (uso único — ele não pode ser reutilizado).
 
     Respostas:
       200 → usuário atualizado (senha trocada).
-      400 → token inválido ou expirado.
+      400 → token inválido, expirado ou já utilizado.
+      422 → senha em branco ou curta demais.
     """
     user = password_reset_token_service.reset_password(db, data.token, data.nova_senha)
     return user

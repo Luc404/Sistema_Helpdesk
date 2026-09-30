@@ -21,12 +21,15 @@ def create_user(db: Session, user_data: UserCreate, role=None) -> User:
     if db.query(User).filter(User.email == user_data.email).first():
         raise HTTPException(status_code=409, detail="E-mail já cadastrado")
 
+    # Os campos vêm prontos e validados do schema UserCreate.
     new_user = User(
         nome=user_data.nome,
         email=user_data.email,
         senha=hash_password(user_data.senha),  # Nunca salva a senha em texto puro
         data_nascimento=user_data.data_nascimento,
         unidade_id=user_data.unidade_id,
+        # "role" só é informado quando um técnico cria outro técnico.
+        # Sem esse argumento, vale o default USUARIO definido no model.
         role=role,
     )
     db.add(new_user)
@@ -42,32 +45,53 @@ def authenticate_user(db: Session, email: str, senha: str) -> User:
     - Conta inativa -> 403.
     """
     user = db.query(User).filter(User.email == email).first()
+
+    # A mesma mensagem para e-mail inexistente e senha errada: informar
+    # qual dos dois falhou ajudaria a descobrir quais e-mails existem.
+    # O tempo de resposta também é parecido porque verify_password roda
+    # nos dois casos (mesmo sem usuário, a comparação não é feita).
     if not user or not verify_password(senha, user.senha):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="E-mail ou senha incorretos",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+    # Conta desativada: a senha está certa, mas o acesso é bloqueado.
+    # 403 (e não 401) porque o problema não é a credencial, é o estado.
     if user.status != StatusEnum.ATIVO:
         raise HTTPException(status_code=403, detail="Usuário inativo")
+
     return user
 
 
 def get_user(db: Session, user_id: int) -> User:
     """Busca um usuário pelo id; lança 404 se não existir."""
     user = db.query(User).filter(User.id == user_id).first()
+
+    # 404 = recurso não existe. Distinto de 403 (sem permissão).
     if not user:
         raise HTTPException(status_code=404, detail="Usuário Não Encontrado")
+
     return user
 
 
 def get_user_by_email(db: Session, email: str) -> User | None:
-    """Busca um usuário pelo e-mail (pode retornar None)."""
+    """Busca um usuário pelo e-mail (pode retornar None).
+
+    Diferente de authenticate_user, aqui NÃO há 401/403: a função só
+    informa se o registro existe. Serve para quem precisa do usuário
+    sem querer falhar quando ele não está lá.
+    """
     return db.query(User).filter(User.email == email).first()
 
 
 def get_users(db: Session) -> list[User]:
-    """Lista todos os usuários."""
+    """Lista todos os usuários.
+
+    Não há paginação nem filtro: a lista alimenta o <select> de
+    "usuários em cópia" do formulário de chamado, que precisa de todos.
+    """
     return db.query(User).all()
 
 
@@ -77,6 +101,7 @@ def update_user(db: Session, user_id: int, user_data: UserUpdate) -> User:
     - Ignora campos vazios/null (v `is not None`).
     - Se `senha` for enviada, é hasheada antes de salvar.
     """
+    # 404 sai daqui se o usuário não existir.
     user = get_user(db, user_id)
 
     # Só os campos realmente enviados entram na troca (update parcial).
@@ -86,6 +111,7 @@ def update_user(db: Session, user_id: int, user_data: UserUpdate) -> User:
     if "senha" in updates:
         updates["senha"] = hash_password(updates["senha"])
 
+    # Aplica cada campo alterado no objeto do ORM.
     for key, value in updates.items():
         setattr(user, key, value)
 
@@ -100,6 +126,8 @@ def delete_user(db: Session, user_id: int) -> None:
     Atenção: chamados e cópias que dependem desse usuário podem bloquear
     a remoção por causa das chaves estrangeiras.
     """
+    # 404 sai daqui se o usuário não existir.
     user = get_user(db, user_id)
+
     db.delete(user)
     db.commit()

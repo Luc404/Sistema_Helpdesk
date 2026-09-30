@@ -39,3 +39,11 @@ class ServicoUpdate(PartialUpdate):
     nome: Optional[str] = None       # Novo nome (opcional)
     descricao: Optional[str] = None  # Nova descrição (opcional)
     icone: Optional[str] = None      # Novo ícone (opcional)
+
+    # "icone" é a única coisa que faz sentido APAGAR: o técnico pode
+    # querer voltar o serviço ao ícone padrão depois de ter escolhido
+    # outro. Sem esta lista, {"icone": null} seria barrado pelo
+    # "ao_menos_um_campo" do PartialUpdate, porque null significa
+    # "não informado" para os demais campos. Aqui o null é intencional
+    # e vale como alteração.
+    campos_limpaveis = frozenset({"icone"})

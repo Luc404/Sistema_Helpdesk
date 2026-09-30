@@ -1,3 +1,19 @@
+// ============================================
+// TELA: ABRIR CHAMADO
+// ============================================
+// Formulário de abertura de chamado, disponível para os dois perfis
+// (rota "/criar-chamado", atrás de RotaProtegida).
+//
+// Três detalhes deste formulário que valem registro:
+//   - "cliente_id" NÃO é enviado. O dono do chamado é deduzido do token
+//     JWT pelo backend (ticket_service.create_ticket), então não adianta
+//     (e não seria seguro) mandar o id pelo corpo.
+//   - Os campos do formulário guardam TEXTO; a conversão para o que a API
+//     espera (id numérico, lista de ids) acontece só no envio.
+//   - A unidade já vem preenchida com a do usuário logado, e as listas de
+//     <select> são carregadas por três rotas diferentes: /servicos/ e
+//     /unidades/ são públicas, /users/ exige token.
+
 import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SidebarLayout } from './SidebarLayout';

@@ -22,6 +22,20 @@ class Settings(BaseSettings):
     # URL de conexão com o banco (o .env sobrescreve este padrão).
     DATABASE_URL: str = "sqlite:///./helpdesk.db"
 
+    # Tempo de validade, em MINUTOS, do token gerado no fluxo
+    # "esqueci minha senha". Passou disso, o token é considerado expirado
+    # e a redefinição é recusada (app/services/password_reset_token_service.py).
+    PASSWORD_RESET_EXPIRE_MINUTES: int = 120
+
+    # Tamanho mínimo da senha aceito pelo fluxo de redefinição.
+    # O mesmo valor é aplicado no cadastro e na troca de senha feita
+    # pelo perfil técnico, para que a regra não mude de tela para tela.
+    SENHA_MINIMO_CARACTERES: int = 6
+
+    # Endereço do frontend usado para montar o link completo de
+    # redefinição que aparece no e-mail ("{FRONTEND_URL}/redefinir-senha").
+    FRONTEND_URL: str = "http://localhost:5173"
+
     class Config:
         # Indica de qual arquivo ler as variáveis (sobrescrevem os padrões acima).
         env_file = ".env"

@@ -1,3 +1,14 @@
+// ============================================
+// TELA: SOBRE
+// ============================================
+// Página informativa sobre o sistema, com os dados do usuário logado e
+// um resumo do que cada perfil pode fazer. A rota é "/sobre" e fica atrás
+// de RotaProtegida.
+//
+// NOTA HISTÓRICA: existia um link "Sobre" na sidebar apontando para
+// /sobre, mas a rota não estava registrada em App.jsx — clicar nele
+// deixava a tela em branco. A rota foi adicionada ao mapa de rotas.
+
 import { SidebarLayout } from './SidebarLayout';
 import { useAuth, ROLE_LABEL } from '../context/auth-context';
 

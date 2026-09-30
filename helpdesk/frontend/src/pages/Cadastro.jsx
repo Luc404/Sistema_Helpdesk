@@ -1,7 +1,22 @@
+// ============================================
+// TELA: CADASTRO DE NOVA CONTA
+// ============================================
+// Formulário público de criação de conta. Fica disponível apenas para
+// quem ainda não está logado (ver RotaPublica em App.jsx).
+//
+// Duasparticularidades desta tela em relação às demais:
+//   - Os campos "primeiroNome" e "ultimoNome" existem só aqui. A API
+//     espera um único campo "nome", então os dois são concatenados no
+//     momento do envio (veja o handleSubmit abaixo).
+//   - O cadastro público sempre cria o usuário com role USUARIO. A
+//     promoção para TÉCNICO é feita por outro usuário, em
+//     PUT /users/{id}, que exige perfil técnico.
+
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService';
 import { traduzirErroApi } from '../services/erroApi';
+import { ERRO_SENHA_CURTA, senhaAtendeTamanho } from '../constants/labels';
 import logo from '../assets/logo.png';
 import illustration from '../assets/modeloFS.png';
 
@@ -47,8 +62,10 @@ export default function Cadastro() {
 
     // Regra mínima de tamanho de senha, validada aqui para não
     // gastar uma ida ao servidor com um dado que já sabemos inválido.
-    if (formData.senha.length < 6) {
-      setErro('A senha precisa ter ao menos 6 caracteres.');
+    // A regra oficial vive no backend (SENHA_MINIMO_CARACTERES) e é
+    // reaproveitada pela tela de redefinição de senha.
+    if (!senhaAtendeTamanho(formData.senha)) {
+      setErro(ERRO_SENHA_CURTA);
       return;
     }
 
@@ -191,6 +208,15 @@ export default function Cadastro() {
                   onChange={handleChange}
                   required
                 />
+              </div>
+
+              {/* Link para recuperação de senha. Aparece para quem já tem
+                  conta e só esqueceu a senha — a tela de login é que
+                  normalmente oferece esse atalho. */}
+              <div className="text-end mb-2">
+                <Link to="/esqueceu-senha" className="text-light text-decoration-none fw-semibold small">
+                  Esqueceu a senha?
+                </Link>
               </div>
 
               {/* Botões de ação: Voltar e Criar conta */}

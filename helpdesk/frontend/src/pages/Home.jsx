@@ -1,3 +1,16 @@
+// ============================================
+// TELA: HOME (dashboard)
+// ============================================
+// Página inicial de quem está logado. Mostra o catálogo de serviços
+// (com busca por nome) e quatro contadores de chamados calculados a
+// partir da lista que o usuário pode ver.
+//
+// A API não tem endpoint de estatísticas, então a contagem por status
+// acontece no navegador, em contarChamados (constants/labels.js). Da
+// mesma forma, a API não aceita ?limit / ?offset, então não há
+// paginação de verdade: as páginas de chamado cortam a lista no
+// navegador (veja TAMANHO_PAGINA em MeusChamdadosUsuario.jsx).
+
 import { useCallback, useMemo, useState } from 'react';
 import { SidebarLayout } from './SidebarLayout';
 import { useRequisicao } from '../hooks/useRequisicao';
