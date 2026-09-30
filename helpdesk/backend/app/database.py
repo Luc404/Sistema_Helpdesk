@@ -2,18 +2,24 @@
 # CONEXÃO COM O BANCO DE DADOS
 # ============================================
 # Responsável por criar a engine, a sessão e a base declarativa do SQLAlchemy.
-# Banco utilizado: SQLite (arquivo helpdesk.db na raiz do backend).
+# Banco utilizado: definido em DATABASE_URL no arquivo .env
+# (PostgreSQL em produção; SQLite como padrão se a variável não existir).
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
-# URL de conexão com o banco SQLite.
-SQLALCHEMY_DATABASE_URL = "sqlite:///./helpdesk.db"
+from app.config import settings
+
+# URL de conexão lida do .env (via app/config.py).
+SQLALCHEMY_DATABASE_URL = settings.DATABASE_URL
+
+# check_same_thread só existe no SQLite; no PostgreSQL não deve ser passado.
+connect_args = {"check_same_thread": False} if SQLALCHEMY_DATABASE_URL.startswith("sqlite") else {}
 
 # Cria a engine de conexão.
-# check_same_thread=False é necessário porque o SQLite é usado com FastAPI
-# (que pode acessar o banco por threads diferentes).
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+# pool_pre_ping=True testa a conexão antes de usar, evitando erro quando o
+# banco na nuvem "dorme" por inatividade.
+engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args=connect_args, pool_pre_ping=True)
 
 # "Fábrica" de sessões: cada sessão representa uma conexão/transação com o banco.
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
