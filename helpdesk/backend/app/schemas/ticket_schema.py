@@ -89,6 +89,7 @@ class TicketDetalheResponse(BaseModel):
 
     # Nomes resolvidos pelo backend (evitam N requisições no frontend)
     cliente_nome: str                   # Nome de quem abriu
+    cliente_setor: Optional[str] = None # Setor/departamento de quem abriu (nulo se não tiver)
     tecnico_nome: Optional[str] = None  # Nome do técnico (nulo se não atribuído)
     servico_nome: str                   # Nome do serviço
     unidade_nome: str                   # Nome da unidade

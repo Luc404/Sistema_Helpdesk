@@ -38,6 +38,7 @@ export interface Chamado {
 // É esta versão que as tabelas do frontend devem consumir.
 export interface ChamadoDetalhe extends Chamado {
     cliente_nome: string;
+    cliente_setor: string | null;
     tecnico_nome: string | null;
     servico_nome: string;
     unidade_nome: string;

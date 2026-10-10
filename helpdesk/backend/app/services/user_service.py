@@ -7,9 +7,48 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 
-from app.models.user import User, StatusEnum
+from app.models.user import User, StatusEnum, RoleEnum
+from app.models.unidade import Unidade
+from app.models.setor import Setor
 from app.schemas.user_schema import UserCreate, UserUpdate
 from app.security import hash_password, verify_password
+
+# Nome da unidade usada como padrão quando o usuário é criado sem unidade.
+# É a mesma "Matriz" criada pelo seed (app/seed.py).
+UNIDADE_PADRAO = "Matriz"
+
+# Setor padrão de todo TÉCNICO. O técnico atende chamados de TI, então é
+# lotado nesse setor automaticamente (criado pelo seed — app/seed.py).
+SETOR_TECNICO_PADRAO = "Suporte de TI"
+
+
+def _resolver_unidade_id(db: Session, unidade_id: int | None) -> int | None:
+    """Devolve a unidade escolhida ou a "Matriz" quando nada é informado.
+
+    Regra de negócio: todo usuário precisa estar em algum LOCAL, para que o
+    técnico saiba onde o chamado foi aberto. Se o cadastro não indicar uma
+    unidade, o usuário é lotado na matriz automaticamente.
+    """
+    if unidade_id is not None:
+        return unidade_id
+
+    matriz = db.query(Unidade).filter(Unidade.nome == UNIDADE_PADRAO).first()
+    return matriz.id if matriz else None
+
+
+def _resolver_setor_id(db: Session, role, setor_id: int | None) -> int | None:
+    """Decide o setor do usuário conforme o papel.
+
+    Regra de negócio: todo TÉCNICO pertence ao "Suporte de TI" — esse é o
+    setor que atende os chamados. Para os demais papéis, usa o setor
+    informado no cadastro (ou None).
+    """
+    if role == RoleEnum.TECNICO:
+        suporte = db.query(Setor).filter(Setor.nome == SETOR_TECNICO_PADRAO).first()
+        if suporte:
+            return suporte.id
+
+    return setor_id
 
 
 def create_user(db: Session, user_data: UserCreate, role=None) -> User:
@@ -17,6 +56,7 @@ def create_user(db: Session, user_data: UserCreate, role=None) -> User:
 
     - Rejeita (409) se já existir um usuário com o mesmo e-mail.
     - `role` é opcional: se não informado, usa o default USUARIO do model.
+    - Sem unidade informada, o usuário é lotado na "Matriz".
     """
     if db.query(User).filter(User.email == user_data.email).first():
         raise HTTPException(status_code=409, detail="E-mail já cadastrado")
@@ -27,7 +67,10 @@ def create_user(db: Session, user_data: UserCreate, role=None) -> User:
         email=user_data.email,
         senha=hash_password(user_data.senha),  # Nunca salva a senha em texto puro
         data_nascimento=user_data.data_nascimento,
-        unidade_id=user_data.unidade_id,
+        # Sem unidade escolhida, cai na "Matriz" (ver _resolver_unidade_id).
+        unidade_id=_resolver_unidade_id(db, user_data.unidade_id),
+        # Setor: usuário usa o informado; TÉCNICO vai para "Suporte de TI".
+        setor_id=_resolver_setor_id(db, role, user_data.setor_id),
         # "role" só é informado quando um técnico cria outro técnico.
         # Sem esse argumento, vale o default USUARIO definido no model.
         role=role,
@@ -106,6 +149,11 @@ def update_user(db: Session, user_id: int, user_data: UserUpdate) -> User:
 
     # Só os campos realmente enviados entram na troca (update parcial).
     updates = {k: v for k, v in user_data.model_dump(exclude_unset=True).items() if v is not None}
+
+    # Promoção a TÉCNICO: lota no "Suporte de TI" quando o chamador não
+    # indicou outro setor junto — assim todo técnico atende TI.
+    if updates.get("role") == RoleEnum.TECNICO and "setor_id" not in updates:
+        updates["setor_id"] = _resolver_setor_id(db, RoleEnum.TECNICO, None)
 
     # A senha chega em texto puro e precisa ser hasheada antes de gravar.
     if "senha" in updates:

@@ -9,13 +9,20 @@
 #
 # As docstrings de cada endpoint aparecem também no Swagger.
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.database import get_db
 from app.dependencies import get_current_user
-from app.models.user import User
-from app.schemas.user_schema import UserCreate, UserLogin, UserResponse, TokenResponse
+from app.models.user import User, StatusEnum
+from app.schemas.user_schema import (
+    UserCreate,
+    UserLogin,
+    UserResponse,
+    TokenResponse,
+    MasterKeyLogin,
+)
 from app.security import create_access_token
 from app.schemas.password_reset_token_schema import (
     PasswordResetRequest,
@@ -23,7 +30,7 @@ from app.schemas.password_reset_token_schema import (
     PasswordResetConfirm,
     PasswordResetTokenStatus,
 )
-from app.services import user_service, password_reset_token_service
+from app.services import user_service, password_reset_token_service, convidado_service
 
 router = APIRouter(prefix="/auth", tags=["Autenticação"])
 
@@ -42,20 +49,38 @@ async def register(user: UserCreate, db: Session = Depends(get_db)):
           "email": "lucas@teste.com",
           "senha": "123456",
           "data_nascimento": "1995-01-01",   // opcional
-          "unidade_id": 1                    // opcional
+          "setor_id": 1                      // opcional
         }
 
     O que acontece por dentro:
       1. Valida o body com o schema UserCreate (e-mail obrigatório/válido).
-      2. user_service.create_user verifica se o e-mail já existe.
-      3. A senha é hasheada antes de ser salva.
+      2. CONFERE O CONVITE: se existir um convite do ADMIN para este e-mail
+         (tabela "convidados"), o usuário nasce com o papel do convite
+         (USUARIO ou TECNICO) em vez do padrão USUARIO. Sem convite ou com
+         convite consumido, vale o padrão.
+      3. user_service.create_user verifica se o e-mail já existe.
+      4. A senha é hasheada antes de ser salva.
+      5. Sem unidade informada, o usuário é lotado automaticamente na
+         unidade "Matriz" (user_service._resolver_unidade_id).
+      6. Só depois do sucesso o convite é consumido (apagado): se o cadastro
+         falhar (ex.: 409 de e-mail duplicado), o convite não se perde.
 
     Respostas:
       201 → usuário criado (retorna os dados sem a senha).
       409 → e-mail já cadastrado.
       422 → body inválido (ex.: e-mail mal formatado).
     """
-    return user_service.create_user(db, user)
+    # Lê o convite SEM consumir: se a criação do usuário falhar (409), o
+    # convite em aberto não pode ser descartado — o ADMIN ainda vai querer
+    # que este funcionário consiga se cadastrar depois.
+    role = convidado_service.obter_role_do_convite(db, user.email)
+
+    novo_usuario = user_service.create_user(db, user, role=role)
+
+    # Cadastro concluído: agora sim o convite de uso único é consumido.
+    convidado_service.consumir_convite(db, user.email)
+
+    return novo_usuario
 
 
 # ----------------------------------------------------------
@@ -88,6 +113,58 @@ async def login(data: UserLogin, db: Session = Depends(get_db)):
     # O "sub" do token guarda o id do usuário autenticado.
     token = create_access_token({"sub": str(user.id)})
     return TokenResponse(access_token=token, user=user)
+
+
+# ----------------------------------------------------------
+# ROTA: POST /auth/master-key  ->  Login do administrador (chave mestre)
+# ----------------------------------------------------------
+@router.post("/master-key", response_model=TokenResponse)
+async def login_master_key(data: MasterKeyLogin, db: Session = Depends(get_db)):
+    """
+    FUNCIONALIDADE: Autentica a conta fixa de administrador usando a chave mestre.
+
+    Body esperado (JSON):
+        { "chave": "helpdesk-master-key-troque-em-producao" }
+
+    O que acontece por dentro:
+      1. Compara a chave digitada com settings.MASTER_KEY (se diferente -> 401).
+      2. Busca a conta ADMIN fixa (settings.ADMIN_EMAIL, criada pelo seed).
+      3. Se válida, gera um token JWT e devolve os dados do administrador.
+
+    FLUXO TEMPORÁRIO: esta rota é a porta de entrada provisória do perfil
+    ADMIN, enquanto não existe um primeiro acesso oficial (convite por
+    e-mail + definição de senha). Quando o fluxo definitivo existir, esta
+    rota e o botão "Chave mestre" no frontend devem ser removidos.
+
+    Respostas:
+      200 → { access_token, token_type, user }.
+      400 → conta de administrador não existe (o seed não rodou).
+      401 → chave mestre incorreta.
+      403 → conta de administrador inativa.
+    """
+    # A mesma mensagem para chave vazia/errada: não entregar pistas.
+    if not data.chave.strip() or data.chave != settings.MASTER_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Chave mestre inválida",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    admin = db.query(User).filter(User.email == settings.ADMIN_EMAIL).first()
+
+    # A conta é criada pelo seed na inicialização; só aparece 400 se o seed
+    # falhou ou se a conta foi removida manualmente.
+    if not admin:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Conta de administrador não configurada. Reinicie a API para recriá-la.",
+        )
+
+    if admin.status != StatusEnum.ATIVO:
+        raise HTTPException(status_code=403, detail="Usuário inativo")
+
+    token = create_access_token({"sub": str(admin.id)})
+    return TokenResponse(access_token=token, user=admin)
 
 
 # ----------------------------------------------------------

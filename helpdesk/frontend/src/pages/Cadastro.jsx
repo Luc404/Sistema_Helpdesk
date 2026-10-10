@@ -12,9 +12,11 @@
 //     promoção para TÉCNICO é feita por outro usuário, em
 //     PUT /users/{id}, que exige perfil técnico.
 
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService';
+import { setorService } from '../services/setorService';
+import { useRequisicao } from '../hooks/useRequisicao';
 import { traduzirErroApi } from '../services/erroApi';
 import { ERRO_SENHA_CURTA, senhaAtendeTamanho } from '../constants/labels';
 import logo from '../assets/logo.png';
@@ -29,8 +31,14 @@ export default function Cadastro() {
     dataNascimento: '',
     email: '',
     senha: '',
-    confirmarSenha: ''
+    confirmarSenha: '',
+    setor: ''
   });
+
+  // Lista de setores para o <select>. O GET /setores/ é público, então a
+  // tela de cadastro consegue carregá-la antes do login.
+  const carregarSetores = useCallback(() => setorService.listar(), []);
+  const { dados: setores, carregando: carregandoSetores } = useRequisicao(carregarSetores);
 
   // Mensagens de erro e estado de envio.
   // Antes esta página usava alert(), que não integra com o layout.
@@ -75,7 +83,9 @@ export default function Cadastro() {
       // A API (UserCreate) espera um campo "nome" único, e não
       // "primeiroNome"/"ultimoNome" separados como no formulário.
       // Também não existe "unidade_id" aqui: o usuário é criado sem
-      // unidade e a role padrão é sempre USUARIO.
+      // unidade (o backend o lota automaticamente na "Matriz") e a role
+      // padrão é sempre USUARIO.
+      // O "setor" selecionado vira setor_id; sem seleção, fica null.
       // O metodo se chama "cadastro" (ver authService.ts:35).
       // Escrever "cadastrar" quebrava a tela com
       // "TypeError: authService.cadastrar is not a function".
@@ -84,6 +94,7 @@ export default function Cadastro() {
         email: formData.email,
         senha: formData.senha,
         data_nascimento: formData.dataNascimento || null,
+        setor_id: formData.setor ? Number(formData.setor) : null,
       });
 
       navigate('/');
@@ -182,6 +193,28 @@ export default function Cadastro() {
                   onChange={handleChange}
                   required
                 />
+              </div>
+
+              {/* Campo: Setor.
+                  O usuário escolhe o setor a que pertence. Sem seleção,
+                  o cadastro segue com setor vazio (o backend não exige). */}
+              <div className="mb-2">
+                <select
+                  name="setor"
+                  className="form-select rounded-pill text-center py-2 border-0"
+                  value={formData.setor}
+                  onChange={handleChange}
+                  disabled={carregandoSetores}
+                >
+                  <option value="">
+                    {carregandoSetores ? 'Carregando setores...' : 'Selecione seu setor'}
+                  </option>
+                  {setores?.map((setor) => (
+                    <option key={setor.id} value={setor.id}>
+                      {setor.nome}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {/* Campo: Senha */}

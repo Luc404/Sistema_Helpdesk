@@ -24,6 +24,7 @@ from app.schemas.ticket_schema import (
     TicketDetalheResponse,
 )
 from app.services import ticket_service
+from app.websocket_manager import manager
 
 router = APIRouter(prefix="/tickets", tags=["Tickets"])
 
@@ -62,7 +63,10 @@ async def create_ticket(data: TicketCreate, db: Session = Depends(get_db),
       401 → usuário não autenticado.
       422 → body inválido (campos obrigatórios ausentes).
     """
-    return ticket_service.create_ticket(db, data, current_user)
+    ticket = ticket_service.create_ticket(db, data, current_user)
+    # Avisa os painéis do ADMIN em tempo real (websocket /ws/tickets).
+    await manager.broadcast_tickets(db)
+    return ticket
 
 
 # ----------------------------------------------------------
@@ -163,7 +167,10 @@ async def update_ticket(ticket_id: int, data: TicketUpdate, db: Session = Depend
       404 → ticket não encontrado.
       422 → body sem nenhum campo válido.
     """
-    return ticket_service.update_ticket(db, ticket_id, data)
+    ticket = ticket_service.update_ticket(db, ticket_id, data)
+    # Avisa os painéis do ADMIN em tempo real (websocket /ws/tickets).
+    await manager.broadcast_tickets(db)
+    return ticket
 
 
 # ----------------------------------------------------------
@@ -187,3 +194,5 @@ async def delete_ticket(ticket_id: int, db: Session = Depends(get_db),
     """
     ticket_service.can_access(db, ticket_id, current_user)
     ticket_service.delete_ticket(db, ticket_id)
+    # Avisa os painéis do ADMIN em tempo real (websocket /ws/tickets).
+    await manager.broadcast_tickets(db)

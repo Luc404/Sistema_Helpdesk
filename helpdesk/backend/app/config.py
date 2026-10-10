@@ -36,6 +36,19 @@ class Settings(BaseSettings):
     # redefinição que aparece no e-mail ("{FRONTEND_URL}/redefinir-senha").
     FRONTEND_URL: str = "http://localhost:5173"
 
+    # CHAVE MESTRE (FLUXO TEMPORÁRIO)
+    # Chave secreta usada pelo botão "Chave mestre" do login (POST
+    # /auth/master-key) para autenticar a conta de administrador fixa criada
+    # pelo seed. Esse fluxo é uma solução passageira enquanto não existe um
+    # primeiro acesso/convite de administrador oficial — depois deve ser
+    # removido do código, junto com o botão no frontend.
+    MASTER_KEY: str = "40028922"
+
+    # E-mail da conta de administrador fixa criada pelo seed (app/seed.py).
+    # O seed usa esta conta com a senha igual à MASTER_KEY, e é ela que o
+    # POST /auth/master-key autentica.
+    ADMIN_EMAIL: str = "admin@helpdesk.com"
+
     class Config:
         # Indica de qual arquivo ler as variáveis (sobrescrevem os padrões acima).
         env_file = ".env"

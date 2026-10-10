@@ -21,12 +21,27 @@ export const AuthContext = createContext(null);
 
 // Hook que as páginas usam para acessar a sessão.
 // Equivale a "useContext(AuthContext)": devolve o objeto fornecido pelo
-// AuthProvider ({ usuario, carregando, isTecnico, login, logout }).
+// AuthProvider ({ usuario, carregando, isTecnico, isAdmin, login, logout,
+// loginMaster }).
 export const useAuth = () => useContext(AuthContext);
 
 // Rótulos amigáveis para exibição da role vinda do backend
-// (o banco devolve os valores em CAIXA ALTA: "USUARIO" / "TECNICO").
+// (o banco devolve os valores em CAIXA ALTA: "USUARIO" / "TECNICO" / "ADMIN").
 export const ROLE_LABEL = {
   USUARIO: 'Usuário',
   TECNICO: 'Técnico',
+  ADMIN: 'Administrador',
 };
+
+// Página inicial de cada perfil, usada depois do login e como fallback dos
+// guards de rota (App.jsx). Centralizar aqui evita repetir os ternários.
+export const ROTA_INICIAL = {
+  USUARIO: '/meus-chamados',
+  TECNICO: '/chamados',
+  ADMIN: '/admin',
+};
+
+// Devolve a rota inicial de um perfil (fallback genérico "/home").
+export function rotaInicial(role) {
+  return ROTA_INICIAL[role] || '/home';
+}

@@ -11,7 +11,7 @@
 
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/auth-context';
+import { useAuth, rotaInicial } from '../context/auth-context';
 
 import logo from '../assets/logo.png';
 import illustration from '../assets/modeloFS.png';
@@ -24,11 +24,22 @@ export default function Login() {
   const [erro, setErro] = useState('');     // Mensagem exibida no alert vermelho
   const [carregando, setCarregando] = useState(false); // Desabilita o botão durante o envio
 
+  // Alterna a visibilidade dos campos: "olhinho" mostra/oculta o texto
+  // tanto da senha do login quanto da chave mestre, sem recarregar a página.
+  const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [mostrarChave, setMostrarChave] = useState(false);
+
+  // FLUXO TEMPORÁRIO da "chave mestre": se o botão foi clicado, mostra o
+  // campo da chave; e a chave digitada até agora.
+  const [mostrandoChave, setMostrandoChave] = useState(false);
+  const [chave, setChave] = useState('');
+  const [carregandoChave, setCarregandoChave] = useState(false);
+
   // Hook para navegação e contexto de autenticação
   // navigate() troca de rota; "login" vem do AuthProvider e já persiste
   // o token no navegador (veja context/AuthProvider.jsx).
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, loginMaster } = useAuth();
 
   // Valida as credenciais e realiza o login
   // Disparado pelo onSubmit do <form>, ou seja, ao clicar em Login
@@ -44,8 +55,8 @@ export default function Login() {
       // O login delega ao contexto, que chama o backend e guarda token + role
       const user = await login(email, senha);
 
-      // Cada role cai na sua página inicial
-      navigate(user.role === 'TECNICO' ? '/chamados' : '/meus-chamados');
+      // Cada role cai na sua página inicial (rotaInicial em auth-context.js)
+      navigate(rotaInicial(user.role));
     } catch (error) {
       // 401 (credenciais erradas) e 403 (conta inativa) trazem a mensagem
       // do backend no campo "detail".
@@ -53,6 +64,25 @@ export default function Login() {
     } finally {
       // Roda tanto no sucesso quanto no erro: o botão volta ao normal.
       setCarregando(false);
+    }
+  };
+
+  // FLUXO TEMPORÁRIO: encerra o login pela chave mestre.
+  // O botão "Chave mestre" é a porta de entrada provisória do perfil ADMIN;
+  // quando existir um primeiro acesso oficial, ele e o endpoint /auth/master-key
+  // devem ser removidos.
+  const handleChaveMestre = async (e) => {
+    e.preventDefault();
+    setErro('');
+    setCarregandoChave(true);
+
+    try {
+      const user = await loginMaster(chave.trim());
+      navigate(rotaInicial(user.role));
+    } catch (error) {
+      setErro(error.response?.data?.detail || 'Chave mestre inválida.');
+    } finally {
+      setCarregandoChave(false);
     }
   };
 
@@ -91,16 +121,27 @@ export default function Login() {
                 />
               </div>
 
-              {/* Campo: Senha */}
+              {/* Campo: Senha (com "olhinho" para mostrar/ocultar) */}
               <div className="mb-2">
-                <input
-                  type="password"
-                  className="form-control form-control-lg rounded-pill text-center bg-secondary text-white placeholder-white border-0 py-3"
-                  placeholder="Password"
-                  value={senha}
-                  onChange={(e) => setSenha(e.target.value)}
-                  required
-                />
+                <div className="input-group">
+                  <input
+                    type={mostrarSenha ? 'text' : 'password'}
+                    className="form-control form-control-lg rounded-pill-start text-center bg-secondary text-white placeholder-white border-0 py-3"
+                    placeholder="Password"
+                    value={senha}
+                    onChange={(e) => setSenha(e.target.value)}
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="input-group-text rounded-pill-end bg-secondary text-white border-0 px-3"
+                    onClick={() => setMostrarSenha(!mostrarSenha)}
+                    aria-label={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}
+                    title={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}
+                  >
+                    <i className={`bi ${mostrarSenha ? 'bi-eye-slash' : 'bi-eye'}`}></i>
+                  </button>
+                </div>
               </div>
 
               {/* Link para recuperação de senha */}
@@ -130,6 +171,70 @@ export default function Login() {
                   Registrar-se
                 </button>
               </div>
+
+              {/* FLUXO TEMPORÁRIO — acesso do ADMIN.
+                  Expande um campo para a "chave mestre" (POST /auth/master-key).
+                  Quando houver um primeiro acesso oficial de administrador,
+                  este botão e o fluxo devem ser removidos. */}
+              {!mostrandoChave ? (
+                <div className="text-center mt-3">
+                  <button
+                    type="button"
+                    className="btn btn-link text-muted text-decoration-none small"
+                    onClick={() => {
+                      setErro('');
+                      setMostrandoChave(true);
+                    }}
+                  >
+                    <i className="bi bi-key me-1"></i> Chave mestre
+                  </button>
+                </div>
+              ) : (
+                // Não pode ser um <form> aqui: já existe um <form> pai
+                // (o de e-mail+senha), e formulários aninhados são inválidos.
+                <div className="mt-3">
+                  <div className="input-group">
+                    <input
+                      type={mostrarChave ? 'text' : 'password'}
+                      className="form-control rounded-pill-start text-center"
+                      placeholder="Digite a chave mestre"
+                      value={chave}
+                      onChange={(e) => setChave(e.target.value)}
+                      autoFocus
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-outline-secondary border-0"
+                      onClick={() => setMostrarChave(!mostrarChave)}
+                      aria-label={mostrarChave ? 'Ocultar chave mestre' : 'Mostrar chave mestre'}
+                      title={mostrarChave ? 'Ocultar chave mestre' : 'Mostrar chave mestre'}
+                    >
+                      <i className={`bi ${mostrarChave ? 'bi-eye-slash' : 'bi-eye'}`}></i>
+                    </button>
+                    <button
+                      type="button"
+                      disabled={carregandoChave}
+                      onClick={handleChaveMestre}
+                      className="btn btn-outline-secondary rounded-pill-end fw-bold text-uppercase px-3"
+                    >
+                      {carregandoChave ? '...' : 'Entrar'}
+                    </button>
+                  </div>
+                  <div className="text-center mt-2">
+                    <button
+                      type="button"
+                      className="btn btn-link text-muted text-decoration-none small"
+                      onClick={() => {
+                        setMostrandoChave(false);
+                        setChave('');
+                        setErro('');
+                      }}
+                    >
+                      Voltar ao login
+                    </button>
+                  </div>
+                </div>
+              )}
             </form>
           </div>
 

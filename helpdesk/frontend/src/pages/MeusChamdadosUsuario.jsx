@@ -17,6 +17,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { SidebarLayout } from './SidebarLayout';
 import { useRequisicao } from '../hooks/useRequisicao';
 import { chamadoService } from '../services/chamadoService';
+import { DetalhesChamado } from '../components/DetalhesChamado';
 import { STATUS_LABEL, STATUS_COR, formatarData } from '../constants/labels';
 
 // Quantas linhas a tabela exibe por vez (a API não faz paginação).
@@ -26,6 +27,9 @@ const TAMANHO_PAGINA = 9;
 export const MeusChamadosUsuario = () => {
   // Texto da busca por título de chamado.
   const [busca, setBusca] = useState('');
+
+  // Chamado escolhido para ver os detalhes (null = nenhum).
+  const [chamadoDetalhe, setChamadoDetalhe] = useState(null);
 
   // Uma única chamada já traz o que o usuário pode ver: o backend
   // (ticket_service.query_visiveis) devolve os chamados que ele abriu
@@ -94,14 +98,20 @@ export const MeusChamadosUsuario = () => {
                 <th>Status</th>
                 <th>Data</th>
                 <th>Unidade</th>
+                <th>Setor</th>
               </tr>
             </thead>
             <tbody>
               {/* Renderiza cada chamado como uma linha da tabela.
                   O status é somente leitura aqui: alterar exigiria o perfil
-                  TÉCNICO (o PUT /tickets/{id} devolve 403 para usuário comum). */}
+                  TÉCNICO (o PUT /tickets/{id} devolve 403 para usuário comum).
+                  A linha é clicável e abre os detalhes do chamado. */}
               {paginaAtual.map((item) => (
-                <tr key={item.id}>
+                <tr
+                  key={item.id}
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => setChamadoDetalhe(item)}
+                >
                   <td>{item.id}</td>
                   <td className="fw-bold">{item.titulo}</td>
                   <td>
@@ -111,12 +121,14 @@ export const MeusChamadosUsuario = () => {
                   </td>
                   <td>{formatarData(item.data_criacao)}</td>
                   <td>{item.unidade_nome}</td>
+                  {/* Setor de quem abriu: "—" quando não informado. */}
+                  <td>{item.cliente_setor || '—'}</td>
                 </tr>
               ))}
 
               {!carregando && paginaAtual.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="text-muted">
+                  <td colSpan={6} className="text-muted">
                     Nenhum chamado encontrado.
                   </td>
                 </tr>
@@ -132,6 +144,15 @@ export const MeusChamadosUsuario = () => {
           </span>
         </div>
       </div>
+
+      {/* Modal com os detalhes do chamado clicado. Os dados já vêm na lista,
+          então não há nova requisição. */}
+      {chamadoDetalhe && (
+        <DetalhesChamado
+          chamado={chamadoDetalhe}
+          onFechar={() => setChamadoDetalhe(null)}
+        />
+      )}
     </SidebarLayout>
   );
 };

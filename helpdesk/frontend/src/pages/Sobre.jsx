@@ -9,15 +9,27 @@
 // /sobre, mas a rota não estava registrada em App.jsx — clicar nele
 // deixava a tela em branco. A rota foi adicionada ao mapa de rotas.
 
+import { useCallback } from 'react';
 import { SidebarLayout } from './SidebarLayout';
+import { useRequisicao } from '../hooks/useRequisicao';
+import { unidadeService } from '../services/unidadeService';
 import { useAuth, ROLE_LABEL } from '../context/auth-context';
 
 // Página informativa do sistema.
-// Existia um link "Sobre" na sidebar apontando para /sobre, mas a rota
-// não estava registrada em App.jsx: clicar nele deixava a tela em branco.
 export const Sobre = () => {
   // Perfil do usuário logado, exibido no corpo da página.
   const { usuario, isTecnico } = useAuth();
+
+  // A sessão traz apenas "unidade_id". Para mostrar o NOME da unidade (e
+  // não o número), buscamos a lista pública de unidades e resolvemos o id.
+  const carregarUnidades = useCallback(() => unidadeService.listar(), []);
+  const { dados: unidades } = useRequisicao(carregarUnidades);
+
+  // Nome da unidade do usuário: "não informada" quando o id é nulo e
+  // "carregando..." enquanto a lista de unidades ainda não chegou.
+  const nomeUnidade = !usuario?.unidade_id
+    ? 'não informada'
+    : unidades?.find((u) => u.id === usuario.unidade_id)?.nome ?? 'carregando...';
 
   return (
     <SidebarLayout>
@@ -32,8 +44,8 @@ export const Sobre = () => {
             <p className="small">
               O HelpDesk é o sistema de gestão de chamados de suporte interno.
               O usuário comum abre e acompanha seus chamados; o perfil técnico
-              atende chamados, gerencia serviços e unidades e altera o status
-              de qualquer atendimento.
+              atende chamados e gerencia serviços; o administrador gerencia
+              unidades e setores e acompanha todos os chamados em tempo real.
             </p>
 
             <hr className="border-light" />
@@ -50,7 +62,7 @@ export const Sobre = () => {
                 <strong>Perfil:</strong> {ROLE_LABEL[usuario?.role] || usuario?.role}
               </li>
               <li>
-                <strong>Unidade:</strong> {usuario?.unidade_id ?? 'não informada'}
+                <strong>Unidade:</strong> {nomeUnidade}
               </li>
             </ul>
 

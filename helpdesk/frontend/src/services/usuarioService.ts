@@ -6,7 +6,7 @@
 // para exibir o nome de quem abriu cada chamado.
 //
 // Atenção: o cadastro e a remoção de usuários são restritos ao perfil
-// TÉCNICO; um usuário comum só edita o próprio cadastro.
+// ADMIN; um usuário comum só edita o próprio cadastro.
 
 import { api } from './api';
 import type { AuthUser, Role } from './authService';
@@ -15,15 +15,16 @@ import type { AuthUser, Role } from './authService';
 // É a mesma estrutura de UserResponse usada no login, reaproveitada aqui.
 export type Usuario = AuthUser;
 
-// Campos que um TÉCNICO pode enviar no PUT /users/{id}.
-// "role" e "status" são recusados com 403 se quem chama não for técnico
-// (regra implementada em app/routers/user_router.py).
+// Campos que um TÉCNICO ou ADMIN pode enviar no PUT /users/{id}.
+// "role" e "status" são recusados com 403 se quem chama for um usuário
+// comum (regra implementada em app/routers/user_router.py).
 export interface UsuarioUpdate {
     nome?: string;
     email?: string;
     senha?: string;
     data_nascimento?: string | null;
     unidade_id?: number | null;
+    setor_id?: number | null;
     role?: Role;
     status?: 'ATIVO' | 'INATIVO';
 }
@@ -59,14 +60,14 @@ export const usuarioService = {
         return response.data;
     },
 
-    // POST /users/ — exige perfil TÉCNICO. Cria sempre com role USUARIO;
+    // POST /users/ — exige perfil ADMIN. Cria sempre com role USUARIO;
     // para promover, chame "atualizar" com { role: 'TECNICO' } em seguida.
-    async criar(dados: { nome: string; email: string; senha: string; data_nascimento?: string | null; unidade_id?: number | null }): Promise<Usuario> {
+    async criar(dados: { nome: string; email: string; senha: string; data_nascimento?: string | null; unidade_id?: number | null; setor_id?: number | null }): Promise<Usuario> {
         const response = await api.post<Usuario>('/users/', dados);
         return response.data;
     },
 
-    // DELETE /users/{id} — exige perfil TÉCNICO.
+    // DELETE /users/{id} — exige perfil ADMIN.
     async remover(id: number): Promise<void> {
         await api.delete(`/users/${id}`);
     },

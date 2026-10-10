@@ -5,7 +5,7 @@
 #
 # Permissões:
 #   - GET (listar/detalhar): acesso público.
-#   - POST / PUT / DELETE: exigem papel TÉCNICO (senão -> 403).
+#   - POST / PUT / DELETE: exigem papel ADMIN (senão -> 403).
 #
 # As docstrings de cada endpoint aparecem também no Swagger.
 
@@ -40,18 +40,18 @@ async def list_unidades(db: Session = Depends(get_db)):
 # ROTA: POST /unidades  ->  Criar unidade
 # ----------------------------------------------------------
 @router.post("/", response_model=UnidadeResponse, status_code=status.HTTP_201_CREATED,
-             dependencies=[Depends(require_roles(RoleEnum.TECNICO))])
+             dependencies=[Depends(require_roles(RoleEnum.ADMIN))])
 async def create_unidade(data: UnidadeCreate, db: Session = Depends(get_db)):
     """
     FUNCIONALIDADE: Cadastra uma nova unidade.
-    Acesso: somente TÉCNICO.
+    Acesso: somente ADMIN.
 
     Body esperado (JSON):
         { "nome": "Matriz" }
 
     Respostas:
       201 → unidade criada.
-      403 → usuário não é técnico.
+      403 → usuário não é admin.
       409 → já existe unidade com esse nome (nome é único).
     """
     return unidade_service.create_unidade(db, data)
@@ -80,11 +80,11 @@ async def get_unidade(unidade_id: int, db: Session = Depends(get_db)):
 # ROTA: PUT /unidades/{unidade_id}  ->  Editar unidade
 # ----------------------------------------------------------
 @router.put("/{unidade_id}", response_model=UnidadeResponse,
-            dependencies=[Depends(require_roles(RoleEnum.TECNICO))])
+            dependencies=[Depends(require_roles(RoleEnum.ADMIN))])
 async def update_unidade(unidade_id: int, data: UnidadeUpdate, db: Session = Depends(get_db)):
     """
     FUNCIONALIDADE: Edita uma unidade (update parcial).
-    Acesso: somente TÉCNICO.
+    Acesso: somente ADMIN.
 
     Parâmetro de URL:
       - unidade_id (int): id da unidade a ser editada.
@@ -95,7 +95,7 @@ async def update_unidade(unidade_id: int, data: UnidadeUpdate, db: Session = Dep
 
     Respostas:
       200 → unidade atualizada.
-      403 → usuário não é técnico.
+      403 → usuário não é admin.
       404 → unidade não encontrada.
       422 → body sem nenhum campo válido.
     """
@@ -106,15 +106,15 @@ async def update_unidade(unidade_id: int, data: UnidadeUpdate, db: Session = Dep
 # ROTA: DELETE /unidades/{unidade_id}  ->  Remover unidade
 # ----------------------------------------------------------
 @router.delete("/{unidade_id}", status_code=status.HTTP_204_NO_CONTENT,
-              dependencies=[Depends(require_roles(RoleEnum.TECNICO))])
+              dependencies=[Depends(require_roles(RoleEnum.ADMIN))])
 async def delete_unidade(unidade_id: int, db: Session = Depends(get_db)):
     """
     FUNCIONALIDADE: Remove uma unidade do sistema.
-    Acesso: somente TÉCNICO.
+    Acesso: somente ADMIN.
 
     Respostas:
       204 → removida com sucesso.
-      403 → usuário não é técnico.
+      403 → usuário não é admin.
       404 → unidade não encontrada.
     """
     unidade_service.delete_unidade(db, unidade_id)

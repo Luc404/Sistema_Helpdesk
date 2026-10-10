@@ -18,6 +18,7 @@ class UserCreate(BaseModel):
     senha: str                    # Senha em texto puro — será hasheada no service
     data_nascimento: Optional[date] = None  # Opcional
     unidade_id: Optional[int] = None        # Usuário pode ser criado sem unidade
+    setor_id: Optional[int] = None          # Setor/departamento do usuário (opcional)
 
 
 class UserResponse(BaseModel):
@@ -32,6 +33,7 @@ class UserResponse(BaseModel):
     email: EmailStr                    # Login do usuário
     data_nascimento: Optional[date] = None  # Data de nascimento
     unidade_id: Optional[int] = None   # Unidade a qual pertence
+    setor_id: Optional[int] = None     # Setor/departamento do usuário
     status: StatusEnum                 # ATIVO (entra no sistema) ou INATIVO
     role: RoleEnum                     # USUARIO ou TECNICO (permissão)
     data_criacao: datetime             # Momento do cadastro (UTC)
@@ -55,6 +57,7 @@ class UserUpdate(PartialUpdate):
     senha: Optional[str] = None            # Nova senha (hasheada no service)
     data_nascimento: Optional[date] = None # Nova data de nascimento
     unidade_id: Optional[int] = None       # Move o usuário para outra unidade
+    setor_id: Optional[int] = None         # Move o usuário para outro setor
     status: Optional[StatusEnum] = None    # Ativa/desativa a conta (só técnico)
     role: Optional[RoleEnum] = None        # Troca o perfil (só técnico)
 
@@ -67,6 +70,16 @@ class UserLogin(BaseModel):
     """
     email: EmailStr  # Login do usuário
     senha: str       # Senha em texto puro (comparada com o hash do banco)
+
+
+class MasterKeyLogin(BaseModel):
+    """Corpo do login pela "Chave mestre" (POST /auth/master-key).
+
+    O botão "Chave mestre" do login envia apenas a chave secreta; se ela
+    bater com a MASTER_KEY do backend, o sistema autentica a conta fixa de
+    administrador (settings.ADMIN_EMAIL) criada pelo seed.
+    """
+    chave: str  # Chave mestre digitada (comparada com settings.MASTER_KEY)
 
 
 class TokenResponse(BaseModel):

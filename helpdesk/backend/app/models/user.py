@@ -19,9 +19,16 @@ class StatusEnum(str, enum.Enum):
 
 
 class RoleEnum(str, enum.Enum):
-    """Papel (permissão) do usuário no sistema."""
+    """Papel (permissão) do usuário no sistema.
+
+    ADMIN é o perfil mais alto: a conta fixa autenticada pela "chave mestre"
+    (POST /auth/master-key). O ADMIN gerencia setores, unidades e usuários
+    (papel que antes era do TÉCNICO) e acompanha todos os chamados em tempo
+    real pelo painel /ws/tickets.
+    """
     USUARIO = "USUARIO"  # Apenas abre/acompanha chamados
-    TECNICO = "TECNICO"  # Atende e gerencia chamados, serviços e unidades
+    TECNICO = "TECNICO"  # Atende e gerencia chamados e serviços
+    ADMIN = "ADMIN"      # Administrador: gerencia setores, unidades e usuários
 
 
 class User(Base):
@@ -43,8 +50,12 @@ class User(Base):
     # Data/hora de criação com fuso horário (UTC por padrão).
     data_criacao = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
-    # Chave estrangeira: unidade a qual o usuário pertence (opcional).
+    # Chave estrangeira: unidade (local físico) a qual o usuário pertence.
+    # O service (create_user) preenche a "Matriz" quando nada é informado,
+    # para que todo usuário saiba de qual local o chamado foi aberto.
     unidade_id = Column(Integer, ForeignKey("unidades.id"), nullable=True)
+    # Chave estrangeira: setor/departamento do usuário (opcional).
+    setor_id = Column(Integer, ForeignKey("setores.id"), nullable=True)
 
     # Relacionamentos (apenas para consultas no ORM):
     # Depende de parâmetros extras (foreign_keys) pois Tickets tem duas FKs para users.
@@ -55,6 +66,7 @@ class User(Base):
         "Ticket", back_populates="tecnico", foreign_keys="Ticket.tecnico_id"
     )
     unidade = relationship("Unidade", back_populates="usuarios")
+    setor = relationship("Setor", back_populates="usuarios")
     # Cópias de ticket nas quais o usuário foi marcado.
     copias_ticket = relationship(
         "TicketCopia", back_populates="user", foreign_keys="TicketCopia.user_id"

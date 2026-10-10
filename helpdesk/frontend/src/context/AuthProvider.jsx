@@ -10,7 +10,7 @@
 // Responsabilidades:
 //   1. Recuperar a sessão do localStorage ao abrir a aplicação.
 //   2. Revalidar o token guardado com o backend (GET /auth/me).
-//   3. Expor login/logout e o perfil (isTecnico) para as páginas.
+//   3. Expor login/logout e o perfil (isTecnico, isAdmin) para as páginas.
 
 import { useEffect, useState } from 'react';
 
@@ -83,11 +83,22 @@ export const AuthProvider = ({ children }) => {
 
   // Autentica no backend e persiste token + usuário (incluindo a role).
   // Devolve o usuário para a página decidir para onde navegar
-  // (técnico -> /chamados, usuário -> /meus-chamados).
+  // (técnico -> /chamados, usuário -> /meus-chamados, admin -> /admin).
   const login = async (email, senha) => {
     const dados = await authService.login({ email, senha });
 
     // Guarda o token e o usuário no navegador para sobreviver ao reload.
+    authStorage.save(dados.access_token, dados.user);
+    setUsuario(dados.user);
+
+    return dados.user;
+  };
+
+  // FLUXO TEMPORÁRIO: login do ADMIN pela "chave mestre" (botão no login).
+  // O backend valida a chave e devolve o token da conta fixa de administrador.
+  const loginMaster = async (chave) => {
+    const dados = await authService.loginMasterKey(chave);
+
     authStorage.save(dados.access_token, dados.user);
     setUsuario(dados.user);
 
@@ -103,12 +114,13 @@ export const AuthProvider = ({ children }) => {
   };
 
   // A role vem do banco (GET /auth/me), nunca do e-mail digitado.
-  // Usada para esconder links da sidebar e proteger a rota /chamados.
+  // Usadas para esconder links da sidebar e proteger rotas por perfil.
   const isTecnico = usuario?.role === 'TECNICO';
+  const isAdmin = usuario?.role === 'ADMIN';
 
   return (
     // Disponibiliza o estado e as ações para todos os componentes filhos.
-    <AuthContext.Provider value={{ usuario, carregando, isTecnico, login, logout }}>
+    <AuthContext.Provider value={{ usuario, carregando, isTecnico, isAdmin, login, loginMaster, logout }}>
       {children}
     </AuthContext.Provider>
   );

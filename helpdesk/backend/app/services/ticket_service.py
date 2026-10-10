@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session, aliased
 from fastapi import HTTPException
 
 from app.models.servico import Servico
+from app.models.setor import Setor
 from app.models.ticket import Ticket
 from app.models.unidade import Unidade
 from app.models.user import User, RoleEnum
@@ -32,12 +33,12 @@ def query_visiveis(db: Session, current_user: User):
     apliquem exatamente a mesma regra de visibilidade, sem duplicar o código.
 
     Regras:
-      - TÉCNICO: todos os chamados.
+      - TÉCNICO e ADMIN: enxergam todos os chamados.
       - USUÁRIO: os que ele abriu + os que está em cópia.
     """
     query = db.query(Ticket)
 
-    if current_user.role == RoleEnum.TECNICO:
+    if current_user.role in (RoleEnum.TECNICO, RoleEnum.ADMIN):
         return query
 
     # Ids dos tickets onde o usuário atual aparece em cópia.
@@ -79,21 +80,24 @@ def get_tickets_detalhe(db: Session, current_user: User) -> list[dict]:
         .join(Servico, Ticket.servico_id == Servico.id)
         .join(Unidade, Ticket.unidade_id == Unidade.id)
         .outerjoin(tecnico, Ticket.tecnico_id == tecnico.id)
+        # O setor é do CLIENTE (quem abriu), não do chamado. O outerjoin
+        # garante que clientes sem setor continuem aparecendo, com None.
+        .outerjoin(Setor, cliente.setor_id == Setor.id)
         # "with_entities" define o que sai no SELECT. Sem ele, o .join()
         #iltraria as linhas mas devolveria só a entidade Ticket, e o
         # unpack "for t, cli, ... in linhas" quebraria.
-        .with_entities(Ticket, cliente, Servico, Unidade, tecnico)
+        .with_entities(Ticket, cliente, Servico, Unidade, tecnico, Setor)
         .order_by(Ticket.data_criacao.desc())
         .all()
     )
 
     tickets = []
 
-    # Cada linha vem do JOIN acima já com as 5 entidades preenchidas.
+    # Cada linha vem do JOIN acima já com as entidades preenchidas.
     # Montamos um dicionário (e não o model Ticket) porque o schema
     # TicketDetalheResponse precisa dos campos "*_nome", que não existem
     # na tabela "tickets" — eles vêm do JOIN.
-    for t, cli, servico, unidade, tec in linhas:
+    for t, cli, servico, unidade, tec, setor_cli in linhas:
         tickets.append(
             {
                 # Dados do chamado (tabela "tickets")
@@ -112,6 +116,8 @@ def get_tickets_detalhe(db: Session, current_user: User) -> list[dict]:
                 "unidade_id": t.unidade_id,
                 # Nomes resolvidos pelo JOIN
                 "cliente_nome": cli.nome,
+                # outerjoin: cliente sem setor devolve None, não erro.
+                "cliente_setor": setor_cli.nome if setor_cli else None,
                 # outerjoin: chamado sem técnico devolve None, não erro.
                 "tecnico_nome": tec.nome if tec else None,
                 "servico_nome": servico.nome,
@@ -188,13 +194,13 @@ def delete_ticket(db: Session, ticket_id: int) -> None:
 def can_access(db: Session, ticket_id: int, user: User) -> Ticket:
     """Verifica se o usuário pode acessar um ticket específico.
 
-    - TÉCNICO: sempre pode.
+    - TÉCNICO e ADMIN: sempre podem.
     - USUÁRIO: apenas se abriu o ticket ou está em cópia (senão -> 403).
     """
     ticket = get_ticket(db, ticket_id)
 
-    # Técnico enxerga qualquer chamado da fila.
-    if user.role == RoleEnum.TECNICO:
+    # Técnico e admin enxergam qualquer chamado da fila.
+    if user.role in (RoleEnum.TECNICO, RoleEnum.ADMIN):
         return ticket
 
     # Para o usuário comum, basta estar na lista de cópias do ticket.

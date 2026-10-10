@@ -1,31 +1,30 @@
 // ============================================
 // TELA: CHAMADOS (perfil TÉCNICO)
 // ============================================
-// Área de trabalho do técnico. Tem duas partes:
-//   1. A FILA DE CHAMADOS (sempre visível)
-//      Mostra todos os chamados e permite mudar o status de qualquer um
-//      deles. Usa GET /tickets/detalhes, que já devolve os nomes
-//      ("servico_nome", "cliente_nome", "unidade_nome") prontos — não é
-//      preciso cruzar ids no frontend.
+// Área de trabalho do técnico: mostra a FILA DE CHAMADOS (sempre visível).
+// Exibe todos os chamados e permite mudar o status de qualquer um deles.
+// Usa GET /tickets/detalhes, que já devolve os nomes ("servico_nome",
+// "cliente_nome", "unidade_nome") prontos — não é preciso cruzar ids no
+// frontend.
 //
-//      O <select> de status dispara PUT /tickets/{id}, restrito ao perfil
-//      TÉCNICO no backend. Se a chamada voltar 403, a mensagem do FastAPI
-//      aparece no alert de erro.
+// O <select> de status dispara PUT /tickets/{id}, restrito ao perfil
+// TÉCNICO no backend. Se a chamada voltar 403, a mensagem do FastAPI
+// aparece no alert de erro.
 //
-//   2. O GERENCIAMENTO DE SERVIÇOS (bloco expansível)
-//      Formulário para o técnico cadastrar, editar e remover os serviços
-//      de suporte. Fica recolhido por padrão para não competir com a fila
-//      de atendimento, que é o trabalho do dia a dia. O conteúdo está em
-//      components/GerenciarServicos.jsx.
+// Clicar em qualquer linha da tabela abre o modal de detalhes do chamado
+// (components/DetalhesChamado.jsx), com todos os campos — sem nova
+// requisição, pois a lista /tickets/detalhes já traz tudo.
+//
+// O gerenciamento de serviços ficava aqui dentro, num bloco expansível.
+// Agora ele tem tela e rota próprias: pages/ServicosTecnico.jsx (/servicos),
+// acessível pelo link "Serviços" da sidebar.
 //
 // A rota é "/chamados" e exige sessão com role TECNICO (ver RotaProtegida
-// somenteTecnico em App.jsx). Aceita "?secao=servicos" para abrir já no
-// gerenciador de serviços — é o que o link "Serviços" da sidebar usa.
+// somenteTecnico em App.jsx).
 
 import { useCallback, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
 import { SidebarLayout } from './SidebarLayout';
-import { GerenciarServicos } from '../components/GerenciarServicos';
+import { DetalhesChamado } from '../components/DetalhesChamado';
 import { useRequisicao } from '../hooks/useRequisicao';
 import { chamadoService } from '../services/chamadoService';
 import { STATUS_LABEL, STATUS_COR, PRIORIDADE_LABEL, formatarData } from '../constants/labels';
@@ -45,16 +44,9 @@ export const ChamadosTecnico = () => {
   // Mensagem de erro da última ação (ex.: 403 ao tentar mudar o status).
   const [erroAcao, setErroAcao] = useState('');
 
-  // Controla se o bloco de gerenciamento de serviços está expandido.
-  //
-  // O valor inicial vem da query string: chegar em "/chamados?secao=servicos"
-  // (link "Serviços" da sidebar) abre o bloco já expandido. A query é lida
-  // uma única vez, na montagem — depois o técnico abre e fecha pelo botão,
-  // sem que a URL fique reescrevendo a cada clique.
-  const [parametros] = useSearchParams();
-  const [mostrarServicos, setMostrarServicos] = useState(
-    () => parametros.get('secao') === 'servicos'
-  );
+  // Chamado escolhido para ver os detalhes no modal (null = nenhum).
+  // A linha inteira da tabela é clicável para abrir este modal.
+  const [chamadoDetalhe, setChamadoDetalhe] = useState(null);
 
   // O técnico enxerga todos os chamados, então uma única requisição basta.
   // "recarregar" é usada depois de cada mudança de status para reexibir a lista.
@@ -106,32 +98,6 @@ export const ChamadosTecnico = () => {
         <span className="bg-secondary text-white px-5 py-2 rounded-pill fw-bold fs-5">chamados</span>
       </div>
 
-      {/* Botão que abre/fecha o gerenciamento de serviços.
-          Fica logo acima do card da fila para o técnico achar rápido,
-          sem precisar descer até o fim da página. */}
-      <div className="d-flex justify-content-end mb-2">
-        <button
-          type="button"
-          className="btn btn-outline-secondary rounded-pill fw-bold"
-          onClick={() => setMostrarServicos((aberto) => !aberto)}
-          aria-expanded={mostrarServicos}
-          aria-controls="area-servicos"
-        >
-          {/* A seta gira conforme o estado, indicando abrir ou fechar. */}
-          <i className={`bi ${mostrarServicos ? 'bi-chevron-up' : 'bi-chevron-down'} me-2`}></i>
-          {mostrarServicos ? 'Ocultar serviços' : 'Gerenciar serviços'}
-        </button>
-      </div>
-
-      {/* Bloco de cadastro/edição/remoção de serviços.
-          Só é montado quando está expandido, para não gastar uma
-          requisição a GET /servicos/ em quem nunca abre o formulário. */}
-      {mostrarServicos && (
-        <div id="area-servicos">
-          <GerenciarServicos />
-        </div>
-      )}
-
       {/* Card com tabela de chamados e barra de pesquisa */}
       <div className="card p-3 border-secondary shadow-sm">
         {/* Campo de busca por ID do chamado */}
@@ -176,19 +142,29 @@ export const ChamadosTecnico = () => {
                 <th>Status</th>
                 <th>Data</th>
                 <th>Usuário</th>
+                <th>Setor</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
-              {/* Renderiza cada chamado como uma linha da tabela */}
+              {/* Renderiza cada chamado como uma linha da tabela.
+                  A linha inteira é clicável para abrir os detalhes. */}
               {paginaAtual.map((item) => (
-                <tr key={item.id}>
+                <tr
+                  key={item.id}
+                  onClick={() => setChamadoDetalhe(item)}
+                  style={{ cursor: 'pointer' }}
+                  title="Clique para ver os detalhes"
+                >
                   <td>{item.id}</td>
                   <td className="fw-bold">{item.servico_nome}</td>
                   <td>{PRIORIDADE_LABEL[item.prioridade] || item.prioridade}</td>
                   {/* O <select> permite ao técnico mudar o status, o que
                       dispara o PUT /tickets/{id}. Fica desabilitado enquanto
-                      a requisição daquela linha está em andamento. */}
-                  <td>
+                      a requisição daquela linha está em andamento.
+                      O stopPropagation evita que o clique no campo abra o
+                      modal de detalhes por engano (a linha inteira abre). */}
+                  <td onClick={(e) => e.stopPropagation()}>
                     <select
                       className={`form-select form-select-sm w-auto mx-auto ${STATUS_COR[item.status]}`}
                       value={item.status}
@@ -205,13 +181,20 @@ export const ChamadosTecnico = () => {
                   </td>
                   <td>{formatarData(item.data_criacao)}</td>
                   <td>{item.cliente_nome}</td>
+                  {/* Setor de quem abriu: ajuda o técnico a saber de qual
+                      área veio a solicitação. "—" quando não informado. */}
+                  <td>{item.cliente_setor || '—'}</td>
+                  {/* Indicador de que a linha abre os detalhes. */}
+                  <td>
+                    <i className="bi bi-chevron-right text-muted"></i>
+                  </td>
                 </tr>
               ))}
 
               {/* Linha exibida quando a busca não encontra nenhum chamado */}
               {!carregando && paginaAtual.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="text-muted">
+                  <td colSpan={8} className="text-muted">
                     Nenhum chamado encontrado.
                   </td>
                 </tr>
@@ -227,6 +210,14 @@ export const ChamadosTecnico = () => {
           </span>
         </div>
       </div>
+
+      {/* Modal com os detalhes do chamado clicado na tabela. */}
+      {chamadoDetalhe && (
+        <DetalhesChamado
+          chamado={chamadoDetalhe}
+          onFechar={() => setChamadoDetalhe(null)}
+        />
+      )}
     </SidebarLayout>
   );
 };

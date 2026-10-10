@@ -34,20 +34,20 @@ export const unidadeService = {
         return response.data;
     },
 
-    // POST /unidades/ — exige perfil TÉCNICO. Devolve 409 se o nome repetir,
+    // POST /unidades/ — exige perfil ADMIN. Devolve 409 se o nome repetir,
     // porque o model define nome com unique=True.
     async criar(dados: Unidade): Promise<Unidade> {
         const response = await api.post<Unidade>('/unidades/', dados);
         return response.data;
     },
 
-    // PUT /unidades/{id} — update parcial e exige perfil TÉCNICO.
+    // PUT /unidades/{id} — update parcial e exige perfil ADMIN.
     async atualizar(id: number, dados: UnidadeUpdate): Promise<Unidade> {
         const response = await api.put<Unidade>(`/unidades/${id}`, dados);
         return response.data;
     },
 
-    // DELETE /unidades/{id} — exige perfil TÉCNICO.
+    // DELETE /unidades/{id} — exige perfil ADMIN.
     async remover(id: number): Promise<void> {
         await api.delete(`/unidades/${id}`);
     },

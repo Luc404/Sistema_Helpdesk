@@ -16,8 +16,12 @@
 
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.models.unidade import Unidade
 from app.models.servico import Servico
+from app.models.setor import Setor
+from app.models.user import User, RoleEnum
+from app.security import hash_password, verify_password
 
 
 # ------------------------------------------------------------
@@ -118,6 +122,122 @@ def garantir_servicos(db: Session) -> list[Servico]:
 
 
 # ------------------------------------------------------------
+# SETORES
+# ------------------------------------------------------------
+# Setores/departamentos que já vêm cadastrados. O "Suporte de TI" é criado
+# porque TODOS os técnicos são lotados nele (ver garantir_tecnicos_...): o
+# técnico atende chamados de TI, então seu setor padrão é esse.
+SETORES_PADRAO = [
+    "Suporte de TI",
+]
+
+
+def garantir_setores(db: Session) -> list:
+    """Garante que os setores padrão existam no banco.
+
+    Mesma lógica idempotente de garantir_unidades: busca pelo nome (chave
+    natural, unique=True) e só cria o que estiver faltando.
+    """
+    setores = []
+
+    for nome in SETORES_PADRAO:
+        existente = db.query(Setor).filter(Setor.nome == nome).first()
+
+        if existente:
+            setores.append(existente)
+            continue
+
+        novo_setor = Setor(nome=nome)
+        db.add(novo_setor)
+        setores.append(novo_setor)
+
+    db.commit()
+
+    for setor in setores:
+        db.refresh(setor)
+
+    return setores
+
+
+def garantir_tecnicos_no_suporte_ti(db: Session) -> int:
+    """Lota TODOS os usuários TECNICO no setor "Suporte de TI".
+
+    Roda a cada inicialização e é idempotente: percorre os técnicos e só
+    grava quando o setor está diferente (evita UPDATE/commit à toa).
+    Devolve quantos foram ajustados.
+    """
+    suporte = db.query(Setor).filter(Setor.nome == "Suporte de TI").first()
+
+    if not suporte:
+        return 0
+
+    tecnicos = db.query(User).filter(User.role == RoleEnum.TECNICO).all()
+    ajustados = 0
+
+    for tecnico in tecnicos:
+        if tecnico.setor_id != suporte.id:
+            tecnico.setor_id = suporte.id
+            ajustados += 1
+
+    if ajustados:
+        db.commit()
+
+    return ajustados
+
+
+# ------------------------------------------------------------
+# CONTA DE ADMINISTRADOR
+# ------------------------------------------------------------
+# O sistema tem UM administrador fixo, criado aqui. A autenticação dele é
+# feita pelo botão "Chave mestre" do login (POST /auth/master-key), que
+# confere a MASTER_KEY e devolve um token para esta conta.
+#
+# FLUXO TEMPORÁRIO: enquanto não existe um primeiro acesso oficial de
+# administrador (convite/convite-e-senha), a chave mestre é o caminho.
+# Quando o fluxo definitivo existir, este seed e a rota /auth/master-key
+# devem ser removidos.
+def garantir_admin(db: Session) -> User:
+    """Garante a conta de administrador fixa (settings.ADMIN_EMAIL).
+
+    (parametro) db: sessão do banco já aberta por quem chama.
+    (retorno): o usuário administrador (existente ou recém-criado).
+
+    Idempotente: busca pelo e-mail (chave natural); se existir, não cria de
+    novo aos reiniciar o uvicorn (que roda o main.py muitas vezes).
+    """
+    admin = db.query(User).filter(User.email == settings.ADMIN_EMAIL).first()
+
+    if admin:
+        # Mantém a senha do admin sincronizada com a MASTER_KEY atual: se a
+        # chave foi trocada (ex.: agora é "40028922") e o admin ainda estava
+        # com a senha antiga, atualiza o hash aqui. Assim a conta fixa segue
+        # com a senha igual à chave mestre, mesmo sem recriar o usuário.
+        if not verify_password(settings.MASTER_KEY, admin.senha):
+            admin.senha = hash_password(settings.MASTER_KEY)
+            db.commit()
+            print(f"[seed] Senha do administrador sincronizada com a nova MASTER_KEY: {settings.ADMIN_EMAIL}")
+        return admin
+
+    # A conta nasce com a senha igual à MASTER_KEY, para que também possa
+    # entrar pela página de login normal (e-mail + senha) se necessário.
+    unidade_matriz = db.query(Unidade).filter(Unidade.nome == "Matriz").first()
+    novo_admin = User(
+        nome="Administrador",
+        email=settings.ADMIN_EMAIL,
+        senha=hash_password(settings.MASTER_KEY),
+        role=RoleEnum.ADMIN,
+        unidade_id=unidade_matriz.id if unidade_matriz else None,
+    )
+
+    db.add(novo_admin)
+    db.commit()
+    db.refresh(novo_admin)
+
+    print(f"[seed] Conta de administrador criada: {settings.ADMIN_EMAIL}")
+    return novo_admin
+
+
+# ------------------------------------------------------------
 # FUNÇÃO DE ENTRADA
 # ------------------------------------------------------------
 def executar_seed(db: Session) -> None:
@@ -131,6 +251,21 @@ def executar_seed(db: Session) -> None:
     try:
         unidades = garantir_unidades(db)
         servicos = garantir_servicos(db)
+        setores = garantir_setores(db)
+        # A conta fixa de administrador (autenticada pela chave mestre).
+        # Criada com try/except próprio porque tem dependência de config/security.
+        try:
+            garantir_admin(db)
+        except Exception as erro_interno:  # noqa: BLE001
+            print(f"[seed] Falha ao garantir o administrador fixo: {erro_interno}")
+
+        # Todo técnico atende TI: lota os TECNICO existentes no setor padrão.
+        try:
+            ajustados = garantir_tecnicos_no_suporte_ti(db)
+            if ajustados:
+                print(f"[seed] {ajustados} técnico(s) lotado(s) no setor Suporte de TI.")
+        except Exception as erro_interno:  # noqa: BLE001
+            print(f"[seed] Falha ao lotar técnicos no Suporte de TI: {erro_interno}")
 
         nomes_unidades = ", ".join(u.nome for u in unidades)
 

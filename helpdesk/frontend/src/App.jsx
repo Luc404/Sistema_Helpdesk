@@ -27,16 +27,23 @@ import { Home } from './pages/Home';
 import { MeusChamadosUsuario } from './pages/MeusChamdadosUsuario';
 import { CriarChamado } from './pages/CriarChamado';
 import { ChamadosTecnico } from './pages/ChamadosTecnico';
+import { ServicosTecnico } from './pages/ServicosTecnico';
+import { SetoresAdmin } from './pages/SetoresAdmin';
+import { UnidadesAdmin } from './pages/UnidadesAdmin';
+import { AdminHome } from './pages/AdminHome';
 import { Sobre } from './pages/Sobre';
 
-// Bloqueia o acesso a quem não está logado e,
-// quando sóTecnico é verdadeiro, a quem não tem a role TECNICO no banco
+import { rotaInicial } from './context/auth-context';
+
+// Bloqueia o acesso a quem não está logado e aplica filtros por perfil:
+//  - somenteTecnico: exige role TECNICO
+//  - somenteAdmin:   exige role ADMIN
 //
 // "children" é a página a ser exibida se o acesso for liberado.
-// A checagem da role é feita no CLIENTE (comparando com 'TECNICO'),
+// A checagem da role é feita no CLIENTE (comparando com o valor do banco),
 // mas o backend repete a validação em cada rota protegida — a checagem
 // aqui é só para melhorar a navegação, não é a barreira de segurança.
-const RotaProtegida = ({ children, somenteTecnico = false }) => {
+const RotaProtegida = ({ children, somenteTecnico = false, somenteAdmin = false }) => {
   const { usuario, carregando } = useAuth();
 
   // Enquanto a sessão não foi revalidada com o backend, não renderiza nada.
@@ -51,9 +58,14 @@ const RotaProtegida = ({ children, somenteTecnico = false }) => {
     return <Navigate to="/" replace />;
   }
 
-  // Logado, mas sem o perfil TÉCNICO: vai para a página de chamados dele.
+  // Logado, mas sem o perfil exigido: cada perfil cai na sua página inicial
+  // (rotaInicial em context/auth-context.js) em vez de receber um erro.
   if (somenteTecnico && usuario.role !== 'TECNICO') {
-    return <Navigate to="/meus-chamados" replace />;
+    return <Navigate to={rotaInicial(usuario.role)} replace />;
+  }
+
+  if (somenteAdmin && usuario.role !== 'ADMIN') {
+    return <Navigate to={rotaInicial(usuario.role)} replace />;
   }
 
   // Acesso liberado: renderiza a página pedida.
@@ -62,7 +74,7 @@ const RotaProtegida = ({ children, somenteTecnico = false }) => {
 
 // Impede que um usuário já logado volte para as telas públicas
 // (login, cadastro e recuperação de senha).
-// Sem isso, um técnico logado poderia ver o formulário de login de novo.
+// Sem isso, um usuário logado poderia ver o formulário de login de novo.
 const RotaPublica = ({ children }) => {
   const { usuario, carregando } = useAuth();
 
@@ -71,9 +83,9 @@ const RotaPublica = ({ children }) => {
     return null;
   }
 
-  // Já logado: cada role cai direto na sua área.
+  // Já logado: cada role cai direto na sua área (rotaInicial em auth-context.js).
   if (usuario) {
-    return <Navigate to={usuario.role === 'TECNICO' ? '/chamados' : '/meus-chamados'} replace />;
+    return <Navigate to={rotaInicial(usuario.role)} replace />;
   }
 
   return children;
@@ -138,6 +150,17 @@ export default function App() {
 
           {/* Página exclusiva do perfil TÉCNICO. */}
           <Route path="/chamados" element={<RotaProtegida somenteTecnico><ChamadosTecnico /></RotaProtegida>} />
+
+          {/* Gerenciamento de serviços, exclusivo do TÉCNICO. */}
+          <Route path="/servicos" element={<RotaProtegida somenteTecnico><ServicosTecnico /></RotaProtegida>} />
+
+          {/* Gerenciamento de setores e unidades, agora exclusivo do ADMIN. */}
+          <Route path="/setores" element={<RotaProtegida somenteAdmin><SetoresAdmin /></RotaProtegida>} />
+
+          <Route path="/unidades" element={<RotaProtegida somenteAdmin><UnidadesAdmin /></RotaProtegida>} />
+
+          {/* Painel do administrador: chamados em tempo real e convites. */}
+          <Route path="/admin" element={<RotaProtegida somenteAdmin><AdminHome /></RotaProtegida>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

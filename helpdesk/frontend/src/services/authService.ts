@@ -21,7 +21,7 @@ export interface LoginPayload {
 }
 
 // Espelha o RoleEnum do backend (app/models/user.py)
-export type Role = 'USUARIO' | 'TECNICO';
+export type Role = 'USUARIO' | 'TECNICO' | 'ADMIN';
 
 // Situação da conta, espelha o StatusEnum do backend.
 export type Status = 'ATIVO' | 'INATIVO';
@@ -33,6 +33,7 @@ export interface AuthUser {
     email: string;
     data_nascimento: string | null;
     unidade_id: number | null;
+    setor_id: number | null;
     status: Status;
     role: Role;
     data_criacao: string;
@@ -71,11 +72,22 @@ export const authService = {
         return response.data;
     },
 
+    // FLUXO TEMPORÁRIO: login do ADMIN pela "chave mestre" (POST /auth/master-key).
+    // O backend compara a chave com a MASTER_KEY e autentica a conta fixa de
+    // administrador (settings.ADMIN_EMAIL). Vale o mesmo retorno de /auth/login.
+    // Erros esperados: 401 (chave errada), 400 (conta admin não configurada).
+    async loginMasterKey(chave: string): Promise<LoginResponse> {
+        const response = await api.post<LoginResponse>('/auth/master-key', { chave });
+        return response.data;
+    },
+
     // Cadastro público de uma nova conta.
     // O usuário nasce sempre com role USUARIO: a promoção para TÉCNICO
     // é feita depois por um técnico em PUT /users/{id}.
+    // Se nenhum "setor_id" vier, ele fica como null; a unidade, quando
+    // ausente, é preenchida com a "Matriz" pelo backend (user_service).
     // Erro esperado: 409 quando o e-mail já está cadastrado.
-    async cadastro(dados: { nome: string; email: string; senha: string; data_nascimento?: string | null; }) {
+    async cadastro(dados: { nome: string; email: string; senha: string; data_nascimento?: string | null; setor_id?: number | null; }) {
         const response = await api.post('/auth/register', dados);
         return response.data;
     },

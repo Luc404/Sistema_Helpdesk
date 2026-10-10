@@ -7,8 +7,10 @@
 // própria, e ele desenha o menu lateral, o cabeçalho com o botão de sair
 // e a área onde o conteúdo da página aparece.
 //
-// O menu muda conforme o perfil: o usuário comum vê "Meus chamados" e
-// "Novo chamado"; o técnico vê "Chamados Técnico".
+// O menu muda conforme o perfil:
+//   - USUARIO: "Meus chamados" e "Novo chamado";
+//   - TECNICO: "Home", "Chamados Técnico" e "Serviços";
+//   - ADMIN: "Painel" (tempo real), "Unidades" e "Setores".
 
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
@@ -22,7 +24,7 @@ export const SidebarLayout = ({ children }) => {
   // Hooks para localização atual, navegação e autenticação
   const location = useLocation();
   const navigate = useNavigate();
-  const { usuario, isTecnico, logout } = useAuth();
+  const { usuario, logout } = useAuth();
 
   // Redireciona para o login se o usuário não estiver autenticado
   useEffect(() => {
@@ -56,24 +58,25 @@ export const SidebarLayout = ({ children }) => {
           <small className="text-light fs-7 d-block">SOFTWARE AS A SERVICE</small>
         </div>
         
-        {/* Navegação principal da sidebar - Links do Usuário */}
+        {/* Navegação principal da sidebar - muda conforme o perfil */}
         <ul className="nav nav-pills flex-column mb-auto">
-          {/* Link: Home - aparece para todos */}
-          <li className="nav-item mb-2">
-            <Link to="/home" className={`nav-link text-white ${location.pathname === '/home' ? 'active bg-dark' : ''}`}>
-              <i className="bi bi-house-door me-2 fs-5"></i> Home
-            </Link>
-          </li>
-
-          {/* Links exclusivos do Usuário */}
-          {!isTecnico && (
+          {/* Perfil USUARIO: área dele */}
+          {usuario.role === 'USUARIO' && (
             <>
+              {/* Link: Home - página inicial do usuário comum */}
+              <li className="nav-item mb-2">
+                <Link to="/home" className={`nav-link text-white ${location.pathname === '/home' ? 'active bg-dark' : ''}`}>
+                  <i className="bi bi-house-door me-2 fs-5"></i> Home
+                </Link>
+              </li>
+
               {/* Link: Meus chamados */}
               <li className="nav-item mb-2">
                 <Link to="/meus-chamados" className={`nav-link text-white ${location.pathname.includes('meus-chamados') ? 'active bg-dark' : ''}`}>
                   <i className="bi bi-headset me-2 fs-5"></i> Meus chamados
                 </Link>
               </li>
+
               {/* Link: Novo chamado */}
               <li className="nav-item mb-2">
                 <Link to="/criar-chamado" className={`nav-link text-white ${location.pathname === '/criar-chamado' ? 'active bg-dark' : ''}`}>
@@ -83,10 +86,17 @@ export const SidebarLayout = ({ children }) => {
             </>
           )}
 
-          {/* Links exclusivos do Técnico */}
-          {isTecnico && (
+          {/* Perfil TECNICO: Home (mesmas funções do usuário) + fila e serviços */}
+          {usuario.role === 'TECNICO' && (
             <>
-              {/* Link: Chamados Técnico */}
+              {/* Link: Home - dashboard de serviços e contadores de chamados */}
+              <li className="nav-item mb-2">
+                <Link to="/home" className={`nav-link text-white ${location.pathname === '/home' ? 'active bg-dark' : ''}`}>
+                  <i className="bi bi-house-door me-2 fs-5"></i> Home
+                </Link>
+              </li>
+
+              {/* Link: Chamados Técnico (fila de atendimento) */}
               <li className="nav-item mb-2">
                 <Link to="/chamados" className={`nav-link text-white ${location.pathname === '/chamados' ? 'active bg-dark' : ''}`}>
                   <i className="bi bi-clipboard me-2 fs-5"></i> Chamados Técnico
@@ -94,12 +104,41 @@ export const SidebarLayout = ({ children }) => {
               </li>
 
               {/* Link: Serviços.
-                  Leva para a MESMA rota /chamados, que é onde fica o
-                  formulário de cadastro de serviços. Precisa do ?secao=servicos
-                  para o bloco já abrir aberto ao chegar pelo link. */}
+                  Leva para a rota própria "/servicos", onde ficam o
+                  cadastro, a edição, a remoção e a listagem dos serviços. */}
               <li className="nav-item mb-2">
-                <Link to="/chamados?secao=servicos" className={`nav-link text-white ${location.search.includes('secao=servicos') ? 'active bg-dark' : ''}`}>
+                <Link to="/servicos" className={`nav-link text-white ${location.pathname === '/servicos' ? 'active bg-dark' : ''}`}>
                   <i className="bi bi-tools me-2 fs-5"></i> Serviços
+                </Link>
+              </li>
+            </>
+          )}
+
+          {/* Perfil ADMIN: painel em tempo real + configurações da empresa */}
+          {usuario.role === 'ADMIN' && (
+            <>
+              {/* Link: Painel — chamados em tempo real (webSocket) */}
+              <li className="nav-item mb-2">
+                <Link to="/admin" className={`nav-link text-white ${location.pathname === '/admin' ? 'active bg-dark' : ''}`}>
+                  <i className="bi bi-speedometer2 me-2 fs-5"></i> Painel
+                </Link>
+              </li>
+
+              {/* Link: Unidades.
+                  Leva para a rota própria "/unidades", onde o admin cria,
+                  edita e remove as unidades (Matriz, filiais). */}
+              <li className="nav-item mb-2">
+                <Link to="/unidades" className={`nav-link text-white ${location.pathname === '/unidades' ? 'active bg-dark' : ''}`}>
+                  <i className="bi bi-building me-2 fs-5"></i> Unidades
+                </Link>
+              </li>
+
+              {/* Link: Setores.
+                  Leva para a rota própria "/setores", onde o admin cria,
+                  edita e remove os setores que aparecem no cadastro. */}
+              <li className="nav-item mb-2">
+                <Link to="/setores" className={`nav-link text-white ${location.pathname === '/setores' ? 'active bg-dark' : ''}`}>
+                  <i className="bi bi-diagram-3 me-2 fs-5"></i> Setores
                 </Link>
               </li>
             </>

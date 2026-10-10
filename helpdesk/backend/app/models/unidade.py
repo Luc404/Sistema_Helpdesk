@@ -6,7 +6,7 @@
 #
 # A unidade "Matriz" (a sede) é criada automaticamente na inicialização
 # da API pelo seed em app/seed.py. O restante (filiais, setores) é
-# cadastrado pelo perfil TÉCNICO em POST /unidades/.
+# cadastrado pelo perfil ADMIN em POST /unidades/.
 
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import relationship
