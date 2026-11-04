@@ -134,7 +134,7 @@ app = FastAPI(
 #    Sem isso, o navegador bloqueia as chamadas feitas pelo axios por
 #    virem de outra origem (a API em :8000 e a tela em :5173).
 origins = [
-    "https://bespoke-kashata-203462.netlify.app"
+    "https://bespoke-kashata-203462.netlify.app",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
 ]
