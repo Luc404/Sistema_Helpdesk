@@ -23,7 +23,7 @@ export const api = axios.create({
     // como "Failed to fetch" / "Network Error", sem resposta do servidor —
     // por isso a tela mostrava apenas "Não foi possível criar a conta".
     // Escrever o IP na mesma familia do servidor elimina a resolucao.
-    baseURL: 'http://127.0.0.1:8000',
+    baseURL: import.meta.env.VITE_API_URL,
 
     // Sem timeout, uma conexao que fica pendurada (firewall, IP errado,
     // servidor travado) trava o botao em "Criando..." para sempre e nao
