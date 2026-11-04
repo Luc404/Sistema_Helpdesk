@@ -23,9 +23,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { authStorage } from '../services/authStorage';
 
-// Mesmo endereço do axios (services/api.ts): host IPv4 explícito porque o
-// Chrome resolve "localhost" para IPv6 antes do IPv4.
-const WS_BASE = 'ws://127.0.0.1:8000';
+// Pega a URL da API (ex: https://sistema-helpdesk-api.onrender.com)
+const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+
+// Transforma http:// em ws:// e https:// em wss:// automaticamente
+const WS_BASE = API_URL.replace(/^http/, 'ws');
 
 // Tempo de espera antes de tentar reconectar após uma conexão cair.
 const RECONEXAO_SEGUNDOS = 3000;
