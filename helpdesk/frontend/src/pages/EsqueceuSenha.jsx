@@ -177,8 +177,13 @@ export default function EsqueceuSenha() {
 // O mesmo conjunto é repetido em RedefinirSenha.jsx: as duas telas são
 // públicos (sem a SidebarLayout) e seguem o mesmo formato de card central.
 const styles = {
-  container: { display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', backgroundColor: '#f4f4f9' },
-  card: { backgroundColor: '#fff', padding: '2rem', borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', width: '320px' },
+  // RESPONSIVIDADE: 100dvh acompanha a barra do navegador no celular e
+  // o padding evita que o card encoste nas bordas.
+  container: { display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100dvh', backgroundColor: '#f4f4f9', padding: '1rem', boxSizing: 'border-box' },
+  // maxWidth: '100%' + boxSizing impedem que os 320px estourem telas
+  // muito estreitas (ex.: 320px de largura). padding menor no mobile
+  // seria ideal, mas 1.5rem já cabe.
+  card: { backgroundColor: '#fff', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', width: '320px', maxWidth: '100%', boxSizing: 'border-box' },
   desc: { fontSize: '0.9rem', color: '#666', marginBottom: '1rem' },
   inputGroup: { display: 'flex', flexDirection: 'column', marginBottom: '1rem', textAlign: 'left' },
   input: { padding: '0.5rem', marginTop: '0.25rem', borderRadius: '4px', border: '1px solid #ccc' },

@@ -88,9 +88,20 @@
 }
 
 /* Remove a margem padrão do <body> (8px do navegador), senão
-   o container #root não encosta nas bordas da tela. */
-body {
+   o container #root não encosta nas bordas da tela.
+
+   RESPONSIVIDADE:
+   - width: 100%  -> a página acompanha a largura do dispositivo.
+   - overflow-x: hidden -> impede que um elemento mais largo que a tela
+     (tabela, card grande, imagem) crie rolagem horizontal na PÁGINA
+     inteira. A rolagem horizontal das tabelas continua acontecendo
+     apenas dentro de .table-responsive.
+   - Não use "overflow: hidden" sozinho: isso também bloquearia a
+     rolagem vertical e travaria a página no celular. */
+html, body {
   margin: 0;
+  width: 100%;
+  overflow-x: hidden;
 }
 
 /* ------------------------------------------------------------
@@ -101,15 +112,12 @@ body {
    das telas com sidebar é medido.
    ------------------------------------------------------------ */
 #root {
-  width: 1126px;
-  max-width: 100%;      /* Nunca ultrapassa a largura da janela */
-  margin: 0 auto;       /* Centraliza horizontalmente */
-  text-align: center;
-  border-inline: 1px solid var(--border);  /* Bordas laterais sutis */
-  min-height: 100svh;   /* svh = altura da menor janela visível */
+  width: 100%;          /* Ocupa toda a largura, sem o antigo 1126px fixo */
+  min-height: 100svh;   /* svh = altura da menor janela visível (mobile) */
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+  text-align: left;     /* Evita centralizar tudo; o Bootstrap cuida do resto */
 }
 
 /* Títulos herdam a fonte de títulos, com peso mais leve que o padrão. */
@@ -160,4 +168,43 @@ code {
   line-height: 135%;
   padding: 4px 8px;
   background: var(--code-bg);
+}
+
+/* ------------------------------------------------------------
+   SIDEBAR RESPONSIVA (SidebarLayout.jsx)
+   ------------------------------------------------------------
+   Desktop (>= 992px): a sidebar fica no fluxo normal, ao lado do
+   conteúdo, com 240px de largura.
+
+   Mobile (< 992px): ela sai do fluxo e vira um painel fixo que cobre
+   a tela, aberto/fechado pelo estado "menuAberto" do React. Como o
+   projeto usa apenas o CSS do Bootstrap (sem o JS), não dá para usar
+   o componente Offcanvas do Bootstrap — por isso este CSS + estado. */
+.sidebar-helpdesk {
+  width: 240px;
+  flex-shrink: 0;          /* Impede a sidebar de "amassar" no desktop */
+}
+
+@media (max-width: 991.98px) {
+  /* Abaixo de 992px o menu vira uma gaveta fixa sobre o conteúdo. */
+  .sidebar-helpdesk {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100dvh;        /* Altura visível do celular */
+    z-index: 1045;         /* Acima do backdrop (1040) */
+    overflow-y: auto;       /* Permite rolar o menu se faltar espaço */
+  }
+
+  /* Controle de visibilidade feito pelo estado do React:
+     - sidebar-aberta  -> aparece;
+     - sidebar-fechada -> some.
+     O !important garante que essas regras vençam a classe d-lg-flex. */
+  .sidebar-helpdesk.sidebar-aberta {
+    display: flex !important;
+  }
+
+  .sidebar-helpdesk.sidebar-fechada {
+    display: none !important;
+  }
 }

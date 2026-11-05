@@ -172,7 +172,9 @@ export const AdminHome = () => {
           const ativo = filtroStatus === status;
 
           return (
-            <div className="col" key={rotulo}>
+            // RESPONSIVIDADE: 2 blocos por linha no celular (col-6) e
+            // 4 por linha a partir de 768px (col-md-3).
+            <div className="col-6 col-md-3" key={rotulo}>
               <button
                 type="button"
                 className={`p-3 bg-secondary text-white rounded shadow-sm w-100 h-100 border-0 ${ativo ? 'border border-3 border-warning' : ''}`}
@@ -190,7 +192,10 @@ export const AdminHome = () => {
       {/* Tabela de chamados, atualizada em tempo real e filtrada pelo bloco
           selecionado acima. */}
       <div className="card p-3 border-secondary shadow-sm mb-4">
-        <div className="d-flex justify-content-center align-items-center text-center position-relative mb-3">
+        {/* RESPONSIVIDADE: no celular os itens empilham (flex-column) e o
+            botão de limpar filtro deixa de ser absoluto, para não sobrepor
+            o título. A partir de md voltam a ficar centralizados em linha. */}
+        <div className="d-flex flex-column flex-md-row justify-content-center align-items-center text-center mb-3 gap-2">
           <div>
             <h5 className="fw-bold mb-0">
               <i className="bi bi-clipboard-data me-2"></i>
@@ -201,11 +206,13 @@ export const AdminHome = () => {
             </small>
           </div>
 
-          {/* Botão para limpar o filtro, visível só quando há um ativo. */}
+          {/* Botão para limpar o filtro, visível só quando há um ativo.
+              Antes ele era position-absolute end-0 e cobria o título no
+              celular. Agora fica no fluxo, empilhado no mobile. */}
           {filtroStatus && (
             <button
               type="button"
-              className="btn btn-outline-secondary btn-sm rounded-pill position-absolute end-0"
+              className="btn btn-outline-secondary btn-sm rounded-pill"
               onClick={() => setFiltroStatus(null)}
             >
               <i className="bi bi-x-circle me-1"></i> Limpar filtro

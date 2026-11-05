@@ -116,7 +116,10 @@ export const Home = () => {
           daquele status (a lista é filtrada mais abaixo). */}
       <div className="row g-3 mb-4 text-center">
         {cards.map(({ rotulo, total, filtrar }) => (
-          <div className="col" key={rotulo}>
+          // RESPONSIVIDADE: "col" mantinha os 4 cards na mesma linha até no
+          // celular, deixando cada um minúsculo. Agora ficam 2 por linha
+          // no celular (col-6) e 4 por linha a partir de 768px (col-md-3).
+          <div className="col-6 col-md-3" key={rotulo}>
             <button
               type="button"
               className="p-3 bg-secondary text-white rounded shadow-sm w-100 h-100 border-0"

@@ -115,13 +115,19 @@ export default function Cadastro() {
   };
 
   return (
-    <div className="d-flex justify-content-center align-items-center vh-100 bg-dark">
-      {/* Card principal com layout dividido em duas colunas */}
-      <div className="card border-0 shadow-lg overflow-hidden" style={{ width: '950px', borderRadius: '25px' }}>
-        <div className="row g-0">
+    // TELA CHEIA: o container ocupa 100% da largura e no mínimo a altura
+    // inteira da janela (min-vh-100), sem margens externas.
+    <div className="d-flex min-vh-100 w-100 bg-dark">
+      {/* Card sem largura fixa: agora ele estica para preencher a tela.
+          borderRadius: 0 remove os cantos arredondados de "card flutuante". */}
+      <div className="card border-0 overflow-hidden w-100 min-vh-100" style={{ borderRadius: 0 }}>
+        {/* min-vh-100 no row faz as duas colunas ocuparem toda a altura. */}
+        <div className="row g-0 min-vh-100 w-100">
           
-          {/* Lado Esquerdo - Logo e Ilustração */}
-          <div className="col-md-5 bg-white d-flex flex-column justify-content-between p-4 pt-5 pb-5 border-end">
+          {/* Lado Esquerdo - Logo e Ilustração.
+              d-none d-md-flex: no celular a coluna decorativa some e o
+              formulário ocupa a tela toda; volta a partir de 768px. */}
+          <div className="col-md-5 bg-white d-none d-md-flex flex-column justify-content-between p-4 pt-5 pb-5 border-end">
             {/* Logo do sistema */}
             <div className="text-center">
               <img src={logo} alt="The Robbins Logo" className="img-fluid" style={{ maxWidth: '200px' }} />
@@ -132,8 +138,9 @@ export default function Cadastro() {
             </div>
           </div>
 
-          {/* Lado Direito - Formulário de cadastro */}
-          <div className="col-md-7 bg-secondary p-5 text-white">
+          {/* Lado Direito - Formulário de cadastro.
+              p-3 no celular, p-5 a partir de md. */}
+          <div className="col-md-7 bg-secondary p-3 p-md-5 text-white">
             <h1 className="text-center mb-4 fw-bold">Registrar - se</h1>
             
             <form onSubmit={handleSubmit}>
@@ -252,17 +259,19 @@ export default function Cadastro() {
                 </Link>
               </div>
 
-              {/* Botões de ação: Voltar e Criar conta */}
-              <div className="d-flex align-items-center justify-content-between mt-4">
+              {/* Botões de ação: Voltar e Criar conta.
+                  Empilhados no celular (flex-column) e lado a lado de
+                  576px para cima (flex-sm-row). flex-fill divide a largura. */}
+              <div className="d-flex flex-column flex-sm-row align-items-center justify-content-between gap-2 mt-4">
                 <button
                   type="button"
-                  className="btn btn-light rounded-pill px-5 py-2 fw-bold text-secondary text-uppercase"
+                  className="btn btn-light rounded-pill px-5 py-2 fw-bold text-secondary text-uppercase flex-fill"
                   onClick={() => navigate('/')}
                   >
                   Voltar
                 </button>
 
-                <button type="submit" disabled={enviando} className="btn btn-light rounded-pill px-5 py-2 fw-bold text-secondary text-uppercase">
+                <button type="submit" disabled={enviando} className="btn btn-light rounded-pill px-5 py-2 fw-bold text-secondary text-uppercase flex-fill">
                   {enviando ? 'Criando...' : 'Criar'}
                 </button>
               </div>

@@ -13,7 +13,7 @@
 //   - ADMIN: "Painel" (tempo real), "Unidades" e "Setores".
 
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth, ROLE_LABEL } from '../context/auth-context';
 import logoImg from '../assets/logo.png';
 import helpdeskImg from '../assets/helpdesk.png';
@@ -25,6 +25,18 @@ export const SidebarLayout = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { usuario, logout } = useAuth();
+
+  // RESPONSIVIDADE: controla a abertura da sidebar no celular.
+  // No desktop (>= 992px) esse estado é ignorado, porque a sidebar fica
+  // sempre visível ao lado do conteúdo (classes d-lg-flex / CSS).
+  // Ele precisa ficar DENTRO do componente: hooks só podem ser chamados
+  // no corpo de um componente ou de outro hook.
+  const [menuAberto, setMenuAberto] = useState(false);
+
+  // O menu mobile é fechado pelo onClick do container da sidebar logo
+  // abaixo: qualquer clique em um link (ou no botão de fechar/backdrop)
+  // executa setMenuAberto(false). Não usamos useEffect aqui porque
+  // chamar setState dentro de um efeito dispara renders em cascata.
 
   // Redireciona para o login se o usuário não estiver autenticado
   useEffect(() => {
@@ -48,9 +60,41 @@ export const SidebarLayout = ({ children }) => {
   };
 
   return (
-    <div className="d-flex vh-100 bg-light">
-      {/* Sidebar Fixa - Menu lateral */}
-      <div className="d-flex flex-column bg-secondary text-white p-3" style={{ width: '240px' }}>
+    // min-vh-100 (em vez de vh-100) evita o "pulo" causado pela barra de
+    // endereço dos navegadores móveis, que muda a altura visível.
+    <div className="d-flex min-vh-100 w-100 bg-light position-relative">
+      {/* RESPONSIVIDADE — fundo escuro do menu mobile.
+          Só aparece abaixo de 992px (d-lg-none) quando o menu está aberto.
+          Clicar nele fecha o menu, como em qualquer app de celular. */}
+      {menuAberto && (
+        <div
+          className="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50 d-lg-none"
+          style={{ zIndex: 1040 }}
+          onClick={() => setMenuAberto(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Sidebar - Menu lateral.
+          No desktop ela fica no fluxo (lado esquerdo, sempre visível).
+          No celular vira um painel fixo por cima do conteúdo, controlado
+          pelo estado menuAberto. As classes de comportamento (posição,
+          largura, mostrar/esconder) estão em index.css (.sidebar-helpdesk),
+          porque o CSS do Bootstrap sozinho não tem "position-lg-static". */}
+      <div
+        className={`sidebar-helpdesk d-flex flex-column bg-secondary text-white p-3 ${menuAberto ? 'sidebar-aberta' : 'sidebar-fechada'} d-lg-flex`}
+        onClick={() => setMenuAberto(false)}
+      >
+        {/* Botão de fechar — só no mobile (d-lg-none) */}
+        <button
+          type="button"
+          className="btn btn-outline-light btn-sm align-self-end d-lg-none mb-2"
+          onClick={() => setMenuAberto(false)}
+          aria-label="Fechar menu"
+        >
+          <i className="bi bi-x-lg"></i>
+        </button>
+
         {/* Logo e nome do sistema */}
         <div className="text-center mb-4">
           <img src={logoImg} alt="The Robbins Logo" className="img-fluid mb-2" style={{ maxHeight: '50px' }} />
@@ -160,9 +204,25 @@ export const SidebarLayout = ({ children }) => {
 
       {/* Área de conteúdo principal */}
       <div className="flex-grow-1 d-flex flex-column overflow-auto">
-        {/* Cabeçalho com perfil do usuário e botão de logout */}
-        <header className="d-flex justify-content-end align-items-center p-3 bg-white border-bottom shadow-sm">
-          <div className="text-end me-2">
+        {/* Cabeçalho com perfil do usuário e botão de logout.
+            RESPONSIVIDADE: flex-wrap + gap deixam os itens quebrarem
+            linha em telas estreitas em vez de espremer tudo numa linha. */}
+        <header className="d-flex flex-wrap justify-content-end align-items-center gap-2 p-3 bg-white border-bottom shadow-sm">
+          {/* Botão "hambúrguer" — só aparece no mobile (d-lg-none).
+              me-auto empurra o restante do cabeçalho para a direita. */}
+          <button
+            type="button"
+            className="btn btn-outline-secondary d-lg-none me-auto"
+            onClick={() => setMenuAberto(true)}
+            aria-label="Abrir menu"
+            aria-expanded={menuAberto}
+          >
+            <i className="bi bi-list fs-4"></i>
+          </button>
+
+          {/* Nome e perfil: escondidos só em telas muito pequenas (d-none d-sm-block)
+              para o cabeçalho não ficar apertado. */}
+          <div className="text-end me-2 d-none d-sm-block">
             {/* O nome e a role vêm do backend (GET /auth/me), não do e-mail digitado. */}
             <strong className="text-dark d-block">{usuario.nome}</strong>
             <small className="text-muted">{userType}</small>
@@ -173,8 +233,10 @@ export const SidebarLayout = ({ children }) => {
           </button>
         </header>
 
-        {/* Conteúdo da página atual (renderizado via React Router) */}
-        <main className="p-4 flex-grow-1">
+        {/* Conteúdo da página atual (renderizado via React Router).
+            p-3 no mobile e p-4 a partir de md: menos padding em telas
+            pequenas para sobrar mais espaço para o conteúdo. */}
+        <main className="p-3 p-md-4 flex-grow-1">
           {children}
         </main>
       </div>
