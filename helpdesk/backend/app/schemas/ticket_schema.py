@@ -24,7 +24,6 @@ class TicketCreate(BaseModel):
     servico_id: int                  # Serviço solicitado
     unidade_id: int                  # Unidade relacionada ao chamado
     tipo_problema: str               # "duvida" ou "defeito"
-    prioridade: PrioridadeEnum = PrioridadeEnum.MEDIA  # Opcional: sem isso, MEDIA
     tecnico_id: Optional[int] = None # Técnico já pode ser indicado na abertura
     copia_user_ids: Optional[list[int]] = None  # Usuários em cópia
 
@@ -34,7 +33,6 @@ class TicketUpdate(PartialUpdate):
     titulo: Optional[str] = None          # Novo título
     descricao: Optional[str] = None       # Nova descrição
     status: Optional[StatusEnum] = None   # Nova etapa do atendimento
-    prioridade: Optional[PrioridadeEnum] = None  # Nova urgência
     servico_id: Optional[int] = None      # Reatribui o serviço
     unidade_id: Optional[int] = None      # Reatribui a unidade
     tipo_problema: Optional[str] = None   # "duvida" ou "defeito"
@@ -48,7 +46,7 @@ class TicketResponse(BaseModel):
     titulo: str                # Resumo do problema
     descricao: str             # Detalhamento do problema
     status: StatusEnum         # Etapa atual do atendimento
-    prioridade: PrioridadeEnum # Urgência do chamado
+    prioridade: PrioridadeEnum # Urgência definida pela IA/fallback
     tipo_problema: str         # "duvida" ou "defeito"
     data_criacao: datetime     # Quando o chamado foi aberto
     data_atualizacao: datetime # Última alteração de conteúdo ou status
@@ -56,6 +54,11 @@ class TicketResponse(BaseModel):
     tecnico_id: Optional[int] = None  # Técnico responsável (pode ser nulo)
     servico_id: int            # Serviço solicitado
     unidade_id: int            # Unidade relacionada
+    prioridade_ia: Optional[bool] = None                  # A IA definiu?
+    prioridade_confianca: Optional[float] = None          # 0.0 a 1.0
+    prioridade_justificativa: Optional[str] = None        # Explicação curta
+    prioridade_origem: Optional[str] = None               # IA, REGRA ou MANUAL
+    prioridade_classificada_em: Optional[datetime] = None # Quando foi classificada
 
     class Config:
         # Permite montar o schema a partir de um objeto do SQLAlchemy
@@ -93,3 +96,10 @@ class TicketDetalheResponse(BaseModel):
     tecnico_nome: Optional[str] = None  # Nome do técnico (nulo se não atribuído)
     servico_nome: str                   # Nome do serviço
     unidade_nome: str                   # Nome da unidade
+
+    # Auditoria da prioridade definida automaticamente
+    prioridade_ia: Optional[bool] = None
+    prioridade_confianca: Optional[float] = None
+    prioridade_justificativa: Optional[str] = None
+    prioridade_origem: Optional[str] = None
+    prioridade_classificada_em: Optional[datetime] = None

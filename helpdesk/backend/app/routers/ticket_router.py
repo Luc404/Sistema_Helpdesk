@@ -11,11 +11,13 @@
 #
 # As docstrings de cada endpoint aparecem também no Swagger.
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.dependencies import get_current_user, require_roles
+from app.models.servico import Servico
+from app.models.unidade import Unidade
 from app.models.user import User, RoleEnum
 from app.schemas.ticket_schema import (
     TicketCreate,
@@ -23,7 +25,7 @@ from app.schemas.ticket_schema import (
     TicketResponse,
     TicketDetalheResponse,
 )
-from app.services import ticket_service
+from app.services import ai_service, ticket_service
 from app.websocket_manager import manager
 
 router = APIRouter(prefix="/tickets", tags=["Tickets"])
@@ -46,24 +48,45 @@ async def create_ticket(data: TicketCreate, db: Session = Depends(get_db),
           "servico_id": 1,                    // obrigatório
           "unidade_id": 1,                    // obrigatório
           "tipo_problema": "duvida",          // "duvida" ou "defeito"
-          "prioridade": "BAIXA",              // opcional (default MEDIA)
           "tecnico_id": 1,                    // opcional
           "copia_user_ids": [2, 3]            // opcional: usuários em cópia
         }
 
     IMPORTANTE: o campo cliente_id NÃO é enviado — o service usa o usuário
-    autenticado (current_user) como cliente do chamado.
+    autenticado (current_user) como cliente do chamado. A prioridade também
+    NÃO é enviada: ela é definida automaticamente pela IA (ou pelo fallback
+    de regras, se a IA estiver indisponível).
 
     O que acontece por dentro:
-      1. ticket_service.create_ticket monta o Ticket.
-      2. Se copia_user_ids vier preenchido, cria os registros de cópia.
+      1. Confere se o serviço e a unidade existem.
+      2. ai_service.classificar_prioridade define prioridade, confiança e
+         justificativa a partir do conteúdo do chamado.
+      3. ticket_service.create_ticket monta o Ticket com essa classificação.
+      4. Se copia_user_ids vier preenchido, cria os registros de cópia.
 
     Respostas:
       201 → ticket criado.
       401 → usuário não autenticado.
+      404 → serviço ou unidade inexistente.
       422 → body inválido (campos obrigatórios ausentes).
     """
-    ticket = ticket_service.create_ticket(db, data, current_user)
+    servico = db.query(Servico).filter(Servico.id == data.servico_id).first()
+    if not servico:
+        raise HTTPException(status_code=404, detail="Serviço não encontrado")
+
+    unidade = db.query(Unidade).filter(Unidade.id == data.unidade_id).first()
+    if not unidade:
+        raise HTTPException(status_code=404, detail="Unidade não encontrada")
+
+    classificacao = await ai_service.classificar_prioridade(
+        titulo=data.titulo,
+        descricao=data.descricao,
+        tipo_problema=data.tipo_problema,
+        servico_nome=servico.nome,
+        unidade_nome=unidade.nome,
+    )
+
+    ticket = ticket_service.create_ticket(db, data, current_user, classificacao)
     # Avisa os painéis do ADMIN em tempo real (websocket /ws/tickets).
     await manager.broadcast_tickets(db)
     return ticket
@@ -147,8 +170,11 @@ async def get_ticket(ticket_id: int, db: Session = Depends(get_db),
             dependencies=[Depends(require_roles(RoleEnum.TECNICO))])
 async def update_ticket(ticket_id: int, data: TicketUpdate, db: Session = Depends(get_db)):
     """
-    FUNCIONALIDADE: Edita um chamado (status, prioridade, técnico, conteúdo).
+    FUNCIONALIDADE: Edita um chamado (status, técnico, conteúdo).
     Acesso: somente TÉCNICO.
+
+    A prioridade NÃO é editável: ela é definida automaticamente na abertura
+    e o campo é removido do schema de update.
 
     Parâmetro de URL:
       - ticket_id (int): id do ticket a ser editado.

@@ -16,6 +16,7 @@ from app.models.unidade import Unidade
 from app.models.user import User, RoleEnum
 from app.models.ticket_copia import TicketCopia
 from app.schemas.ticket_schema import TicketCreate, TicketUpdate
+from app.services.ai_service import ResultadoPrioridade
 
 
 def get_ticket(db: Session, ticket_id: int) -> Ticket:
@@ -106,6 +107,11 @@ def get_tickets_detalhe(db: Session, current_user: User) -> list[dict]:
                 "descricao": t.descricao,
                 "status": t.status,
                 "prioridade": t.prioridade,
+                "prioridade_ia": t.prioridade_ia,
+                "prioridade_confianca": t.prioridade_confianca,
+                "prioridade_justificativa": t.prioridade_justificativa,
+                "prioridade_origem": t.prioridade_origem,
+                "prioridade_classificada_em": t.prioridade_classificada_em,
                 "tipo_problema": t.tipo_problema,
                 "data_criacao": t.data_criacao,
                 "data_atualizacao": t.data_atualizacao,
@@ -128,16 +134,27 @@ def get_tickets_detalhe(db: Session, current_user: User) -> list[dict]:
     return tickets
 
 
-def create_ticket(db: Session, data: TicketCreate, cliente: User) -> Ticket:
+def create_ticket(
+    db: Session,
+    data: TicketCreate,
+    cliente: User,
+    classificacao: ResultadoPrioridade,
+) -> Ticket:
     """Abre um novo chamado.
 
     - O cliente é o usuário autenticado (não vem do body).
+    - A prioridade vem da classificação automática (IA ou fallback).
     - Cria também os registros de cópia caso `copia_user_ids` seja enviado.
     """
     ticket = Ticket(
         titulo=data.titulo,
         descricao=data.descricao,
-        prioridade=data.prioridade,
+        prioridade=classificacao.prioridade,
+        prioridade_ia=classificacao.origem == "IA",
+        prioridade_confianca=classificacao.confianca,
+        prioridade_justificativa=classificacao.justificativa,
+        prioridade_origem=classificacao.origem,
+        prioridade_classificada_em=datetime.now(timezone.utc),
         cliente_id=cliente.id,
         tecnico_id=data.tecnico_id,
         servico_id=data.servico_id,
@@ -168,6 +185,10 @@ def update_ticket(db: Session, ticket_id: int, data: TicketUpdate) -> Ticket:
     """
     ticket = get_ticket(db, ticket_id)
     updates = {k: v for k, v in data.model_dump(exclude_unset=True).items() if v is not None}
+
+    # A prioridade é definida automaticamente e não pode ser alterada
+    # pelo PUT genérico, mesmo que um cliente antigo ainda a envie.
+    updates.pop("prioridade", None)
 
     # setattr aplica cada chave (titulo, status, ...) direto no objeto.
     for key, value in updates.items():
