@@ -19,6 +19,7 @@ import {
   TIPOS_PROBLEMA,
   formatarDataHora,
 } from '../constants/labels';
+import { abrirChatIA } from '../services/chatIA';
 
 // O backend guarda o tipo de problema como valor cru ("duvida", "defeito").
 // Aqui ele vira o rótulo legível; se vier algo fora da lista, mostra o
@@ -28,6 +29,7 @@ const rotuloTipo = (valor) =>
 
 const rotuloOrigemPrioridade = (origem) => {
   if (origem === 'IA') return 'Definida automaticamente pela IA';
+  if (origem === 'HIBRIDA') return 'Definida pela IA com validação por regras';
   if (origem === 'REGRA') return 'Definida por regras (IA indisponível)';
   if (origem === 'MANUAL') return 'Definida manualmente';
   return null;
@@ -108,6 +110,20 @@ export const DetalhesChamado = ({ chamado, onFechar }) => {
         <div className="col-12">
           <div className="text-muted small text-uppercase fw-bold">Descrição</div>
           <div className="border rounded p-2 bg-light">{chamado.descricao}</div>
+        </div>
+
+        <div className="col-12">
+          <button
+            type="button"
+            className="btn btn-outline-secondary btn-sm"
+            onClick={() => {
+              onFechar();
+              abrirChatIA(chamado.id);
+            }}
+          >
+            <i className="bi bi-chat-dots me-1"></i>
+            Perguntar à IA sobre este chamado
+          </button>
         </div>
       </div>
     </Modal>

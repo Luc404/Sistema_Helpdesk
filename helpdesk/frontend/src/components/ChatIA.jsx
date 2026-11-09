@@ -21,8 +21,24 @@ const SUGESTOES = [
   'Como redefinir minha senha?',
 ];
 
-export const ChatIA = () => {
-  const [aberto, setAberto] = useState(false);
+export const ChatIA = ({
+  aberto: abertoControlado,
+  aoAlterarAberto,
+  ticketId = null,
+  aoLimparTicket,
+}) => {
+  const [abertoInterno, setAbertoInterno] = useState(false);
+  const aberto = abertoControlado ?? abertoInterno;
+
+  const alterarAberto = (valor) => {
+    const proximo = typeof valor === 'function' ? valor(aberto) : valor;
+
+    if (abertoControlado !== undefined) {
+      aoAlterarAberto?.(proximo);
+    } else {
+      setAbertoInterno(proximo);
+    }
+  };
   const [mensagens, setMensagens] = useState([MENSAGEM_INICIAL]);
   const [texto, setTexto] = useState('');
   const [enviando, setEnviando] = useState(false);
@@ -48,6 +64,12 @@ export const ChatIA = () => {
     if (aberto) campoRef.current?.focus();
   }, [aberto]);
 
+  const limparConversa = () => {
+    setMensagens([MENSAGEM_INICIAL]);
+    setTexto('');
+    setErro('');
+  };
+
   const enviar = async (textoForcado) => {
     const pergunta = (textoForcado ?? texto).trim();
 
@@ -64,11 +86,20 @@ export const ChatIA = () => {
     setEnviando(true);
 
     try {
-      const resposta = await iaService.chat(pergunta, historico);
+      const resposta = await iaService.chat(
+        pergunta,
+        historico,
+        ticketId ?? undefined,
+      );
 
       setMensagens((anteriores) => [
         ...anteriores,
-        { papel: 'assistant', conteudo: resposta.resposta },
+        {
+          papel: 'assistant',
+          conteudo: resposta.resposta,
+          fontes: resposta.fontes,
+          modelo: resposta.modelo,
+        },
       ]);
     } catch (falha) {
       setErro(
@@ -101,13 +132,28 @@ export const ChatIA = () => {
           role="dialog"
           aria-label="Assistente virtual"
         >
-          <div className="card-header bg-secondary text-white d-flex justify-content-between align-items-center py-2">
+          <div className="card-header bg-secondary text-white d-flex justify-content-between align-items-center gap-2 py-2">
             <span className="fw-bold">
               <i className="bi bi-robot me-2"></i>
               Assistente IA
             </span>
 
-            <div className="d-flex align-items-center gap-2">
+            <div className="d-flex flex-wrap align-items-center justify-content-end gap-2">
+              {ticketId !== null && (
+                <span className="badge text-bg-light d-inline-flex align-items-center gap-1">
+                  <i className="bi bi-ticket-perforated"></i>
+                  Chamado #{ticketId}
+                  {aoLimparTicket && (
+                    <button
+                      type="button"
+                      className="btn-close ms-1"
+                      style={{ fontSize: '0.45rem' }}
+                      aria-label="Remover contexto do chamado"
+                      onClick={aoLimparTicket}
+                    ></button>
+                  )}
+                </span>
+              )}
               {modoBasico && (
                 <span className="badge text-bg-light" title="IA generativa não configurada">
                   modo básico
@@ -115,9 +161,18 @@ export const ChatIA = () => {
               )}
               <button
                 type="button"
+                className="btn btn-sm btn-outline-light py-0 px-1"
+                aria-label="Limpar conversa"
+                title="Limpar conversa"
+                onClick={limparConversa}
+              >
+                <i className="bi bi-arrow-counterclockwise"></i>
+              </button>
+              <button
+                type="button"
                 className="btn-close btn-close-white"
                 aria-label="Fechar assistente"
-                onClick={() => setAberto(false)}
+                onClick={() => alterarAberto(false)}
               ></button>
             </div>
           </div>
@@ -148,6 +203,16 @@ export const ChatIA = () => {
                   }}
                 >
                   {mensagem.conteudo}
+                  {mensagem.papel === 'assistant' &&
+                    mensagem.fontes?.length > 0 && (
+                      <div
+                        className="mt-1 text-muted"
+                        style={{ fontSize: '0.68rem' }}
+                      >
+                        <i className="bi bi-book me-1"></i>
+                        Fontes: {mensagem.fontes.join(', ')}
+                      </div>
+                    )}
                 </div>
               </div>
             ))}
@@ -222,7 +287,7 @@ export const ChatIA = () => {
         type="button"
         className="btn btn-secondary rounded-circle shadow"
         style={{ width: '56px', height: '56px' }}
-        onClick={() => setAberto((valor) => !valor)}
+        onClick={() => alterarAberto((valor) => !valor)}
         aria-label={aberto ? 'Fechar assistente' : 'Abrir assistente'}
         aria-expanded={aberto}
       >

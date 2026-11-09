@@ -18,6 +18,7 @@ import { useAuth, ROLE_LABEL } from '../context/auth-context';
 import logoImg from '../assets/logo.png';
 import helpdeskImg from '../assets/helpdesk.png';
 import { ChatIA } from '../components/ChatIA';
+import { EVENTO_ABRIR_CHAT } from '../services/chatIA';
 
 // Layout principal com sidebar fixa e área de conteúdo
 // Recebe children (conteúdo da página) e exibe sidebar baseada no tipo de usuário logado
@@ -33,6 +34,8 @@ export const SidebarLayout = ({ children }) => {
   // Ele precisa ficar DENTRO do componente: hooks só podem ser chamados
   // no corpo de um componente ou de outro hook.
   const [menuAberto, setMenuAberto] = useState(false);
+  const [chatAberto, setChatAberto] = useState(false);
+  const [chatTicketId, setChatTicketId] = useState(null);
 
   // O menu mobile é fechado pelo onClick do container da sidebar logo
   // abaixo: qualquer clique em um link (ou no botão de fechar/backdrop)
@@ -45,6 +48,18 @@ export const SidebarLayout = ({ children }) => {
       navigate('/');
     }
   }, [usuario, navigate]);
+
+  useEffect(() => {
+    const aoAbrirChat = (evento) => {
+      setChatTicketId(evento.detail?.ticketId ?? null);
+      setChatAberto(true);
+      setMenuAberto(false);
+    };
+
+    window.addEventListener(EVENTO_ABRIR_CHAT, aoAbrirChat);
+
+    return () => window.removeEventListener(EVENTO_ABRIR_CHAT, aoAbrirChat);
+  }, []);
 
   // Evita renderizar o layout antes da verificação de autenticação
   if (!usuario) {
@@ -191,9 +206,22 @@ export const SidebarLayout = ({ children }) => {
         </ul>
 
         {/* Imagem ilustrativa na sidebar */}
-        <div className="text-center my-3">
+        <button
+          type="button"
+          className="btn btn-link d-block mx-auto my-3 p-0 border-0 text-white text-decoration-none"
+          onClick={() => {
+            setChatTicketId(null);
+            setChatAberto((valor) => !valor);
+          }}
+          aria-label={chatAberto ? 'Fechar assistente virtual' : 'Abrir assistente virtual'}
+          title="Abrir assistente virtual"
+        >
           <img src={helpdeskImg} alt="Help Desk Support" className="img-fluid" style={{ maxHeight: '90px' }} />
-        </div>
+          <small className="d-block">
+            <i className="bi bi-chat-dots me-1"></i>
+            Assistente IA
+          </small>
+        </button>
 
         {/* Link: Sobre */}
         <div className="mt-auto border-top pt-2">
@@ -242,7 +270,13 @@ export const SidebarLayout = ({ children }) => {
         </main>
       </div>
 
-      <ChatIA />
+      <ChatIA
+        key={chatTicketId ?? 'geral'}
+        aberto={chatAberto}
+        aoAlterarAberto={setChatAberto}
+        ticketId={chatTicketId}
+        aoLimparTicket={() => setChatTicketId(null)}
+      />
     </div>
   );
 };

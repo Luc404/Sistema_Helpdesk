@@ -57,7 +57,7 @@ class TicketResponse(BaseModel):
     prioridade_ia: Optional[bool] = None                  # A IA definiu?
     prioridade_confianca: Optional[float] = None          # 0.0 a 1.0
     prioridade_justificativa: Optional[str] = None        # Explicação curta
-    prioridade_origem: Optional[str] = None               # IA, REGRA ou MANUAL
+    prioridade_origem: Optional[str] = None               # IA, HIBRIDA, REGRA ou MANUAL
     prioridade_classificada_em: Optional[datetime] = None # Quando foi classificada
 
     class Config:

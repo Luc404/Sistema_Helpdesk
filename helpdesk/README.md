@@ -15,11 +15,11 @@ O projeto agora conta com dois recursos de inteligência artificial:
 - Cadastro, login e recuperação de senha com JWT.
 - Perfis `USUARIO`, `TECNICO` e `ADMIN`.
 - Abertura de chamados com serviço, unidade, tipo de problema e usuários em cópia.
-- Classificação automática de prioridade com justificativa e nível de confiança.
+- Classificação híbrida de prioridade (IA + regras) com justificativa e confiança.
 - Fila de atendimento do técnico ordenada por prioridade.
 - Atualização de status em tempo real e painel do administrador via WebSocket.
 - Gestão de unidades, setores e serviços.
-- Chat de dúvidas com IA, disponível em todas as telas internas.
+- Chat de dúvidas com IA, fontes e contexto autorizado de chamados.
 - Funcionamento com fallback quando a IA não está configurada ou está fora do ar.
 
 ## Tecnologias

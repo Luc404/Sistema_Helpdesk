@@ -34,7 +34,7 @@ export interface Chamado {
     prioridade_ia?: boolean | null;
     prioridade_confianca?: number | null;
     prioridade_justificativa?: string | null;
-    prioridade_origem?: 'IA' | 'REGRA' | 'MANUAL' | null;
+    prioridade_origem?: 'IA' | 'HIBRIDA' | 'REGRA' | 'MANUAL' | null;
     prioridade_classificada_em?: string | null;
 }
 

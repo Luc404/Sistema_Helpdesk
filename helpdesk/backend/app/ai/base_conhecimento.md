@@ -80,6 +80,33 @@ Também gerenciam unidades e setores do sistema.
 3. Use o token gerado para acessar a tela de redefinição.
 4. Defina uma nova senha com pelo menos 6 caracteres.
 
+## O que o assistente virtual faz
+
+O assistente tira dúvidas sobre o uso do HelpDesk: abertura e acompanhamento de
+chamados, status, prioridades, unidades, setores, cópias e redefinição de senha.
+Ele não altera chamados, não define prioridade manualmente e não executa ações.
+Quando a resposta não estiver na base, ele orienta a abrir um chamado.
+
+## Não consigo acessar minha conta
+
+1. Confira se o e-mail e a senha estão corretos.
+2. Use a opção "Esqueceu a senha?" na tela de login.
+3. Se o e-mail não for reconhecido, procure o administrador para conferir seu
+   cadastro.
+4. Nunca envie sua senha para o assistente ou para outra pessoa.
+
+## Acompanhamento e prazos
+
+O status do chamado é atualizado pelo técnico responsável em "Meus chamados" ou
+na fila de atendimento. O sistema não define prazo de resolução automaticamente
+e o assistente não pode prometer datas. Para urgência, descreva no chamado o
+impacto real e quem está afetado.
+
+## Contato com o suporte
+
+O canal principal é a abertura de um chamado em "Novo chamado". Descreva o
+problema, o serviço, a unidade e o impacto para agilizar o atendimento.
+
 ## Segurança e privacidade
 
 - Nunca compartilhe sua senha.

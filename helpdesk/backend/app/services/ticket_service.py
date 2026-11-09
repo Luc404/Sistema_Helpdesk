@@ -150,7 +150,7 @@ def create_ticket(
         titulo=data.titulo,
         descricao=data.descricao,
         prioridade=classificacao.prioridade,
-        prioridade_ia=classificacao.origem == "IA",
+        prioridade_ia=classificacao.origem in ("IA", "HIBRIDA"),
         prioridade_confianca=classificacao.confianca,
         prioridade_justificativa=classificacao.justificativa,
         prioridade_origem=classificacao.origem,

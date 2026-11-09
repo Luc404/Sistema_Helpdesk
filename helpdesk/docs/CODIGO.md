@@ -93,10 +93,10 @@ evitar ambiguidade.
 Campos de auditoria da prioridade em `Ticket`:
 
 - `prioridade`: valor final (`BAIXA`, `MEDIA`, `ALTA`).
-- `prioridade_ia`: indica se a IA generativa definiu o valor.
+- `prioridade_ia`: indica se a IA participou da decisão (`IA` ou `HIBRIDA`).
 - `prioridade_confianca`: confiança entre 0 e 1.
 - `prioridade_justificativa`: explicação curta.
-- `prioridade_origem`: `IA`, `REGRA` ou `MANUAL`.
+- `prioridade_origem`: `IA`, `HIBRIDA`, `REGRA` ou `MANUAL`.
 - `prioridade_classificada_em`: data/hora da classificação.
 
 ### 2.5. Schemas: `backend/app/schemas/`
@@ -141,16 +141,22 @@ Centraliza toda a integração com IA.
 - `ia_configurada()`: verifica `AI_ENABLED` e `AI_API_KEY`.
 - `_cliente()`: cria preguiçosamente um `AsyncOpenAI` com `base_url`,
   `timeout` e `max_retries=0`.
-- `classificar_prioridade()`: chama o modelo de prioridade e valida a resposta.
-- `_classificar_por_regras()`: fallback determinístico por palavras-chave.
+- `classificar_prioridade()`: classifica por regras e pelo modelo, depois
+  combina os dois resultados.
+- `_classificar_por_regras()`: fallback determinístico com sinais críticos,
+  sinais de impacto, serviço crítico e confiança calibrada.
+- `_mesclar_com_regras()`: impede que a IA rebaixe um sinal crítico detectado
+  pelas regras e usa as regras quando a IA tem baixa confiança. O resultado
+  combinado recebe origem `HIBRIDA`.
 - `_extrair_json()` e `_interpretar_resposta()`: parsing robusto, validação do
   enum, normalização da confiança e limite da justificativa.
 - `carregar_base_conhecimento()`: lê `app/ai/base_conhecimento.md`.
-- `_selecionar_trechos()`: busca simples por sobreposição de palavras nas
-  seções `##` da base.
+- `_selecionar_trechos()`: busca por palavras e sinônimos nas seções `##` da
+  base, considerando também o contexto do chamado e a pergunta anterior.
 - `responder_chat()`: chama o modelo de chat com base de conhecimento e
   contexto autorizado; em falha, usa a busca local.
-- `_resposta_chat_por_regras()`: fallback do chat.
+- `_resposta_social()`: respostas rápidas para saudações e agradecimentos.
+- `_resposta_chat_por_regras()`: fallback do chat com os trechos encontrados.
 
 O formato de prioridade esperado do modelo é:
 
@@ -214,13 +220,20 @@ O fluxo de chave mestre é temporário e está documentado no próprio código.
 POST /tickets
   → valida serviço/unidade
   → ai_service.classificar_prioridade
-       ├─ IA configurada: chama o modelo com rubrica + dados do chamado
-       │    ├─ resposta válida: prioridade, confiança, justificativa, origem IA
-       │    └─ erro/timeout/JSON inválido: fallback por regras
-       └─ IA não configurada: fallback por regras
+       ├─ regras locais calculam sinais, prioridade e confiança
+       ├─ IA configurada: modelo com rubrica + exemplos + dados do chamado
+       │    ├─ resposta válida: combina IA + regras (_mesclar_com_regras)
+       │    └─ erro/timeout/JSON inválido: usa resultado das regras
+       └─ IA não configurada: usa resultado das regras
   → ticket_service.create_ticket
   → commit + broadcast
 ```
+
+A classificação é híbrida: a IA interpreta o texto, mas as regras funcionam
+como guarda-corpo. Se as regras detectarem um sinal crítico (segurança, perda
+de dados, indisponibilidade ampla), a prioridade não pode ser rebaixada pela
+IA. Se a IA tiver baixa confiança e as regras indicarem impacto maior, as
+regras prevalecem.
 
 A rubrica de prioridade está no prompt do serviço e segue estes princípios:
 
@@ -229,7 +242,8 @@ A rubrica de prioridade está no prompt do serviço e segue estes princípios:
 - `BAIXA`: dúvida simples, informação, melhoria, sem bloqueio.
 
 O texto do chamado é tratado como dado não confiável. O prompt orienta o modelo
-a ignorar instruções embutidas na descrição.
+a ignorar instruções embutidas na descrição. Urgência declarada pelo usuário
+não é usada como critério isolado.
 
 ## 4. Fluxo do chatbot
 
@@ -238,12 +252,17 @@ ChatIA (React)
   → POST /ai/chat
   → auth + rate limit
   → se ticket_id: can_access
-  → seleção de trechos da base de conhecimento
+  → saudação/agradecimento? resposta rápida local
+  → seleção de trechos (pergunta + sinônimos + contexto + histórico)
   → IA configurada?
        ├─ sim: prompt com base + contexto + histórico limitado
        └─ não/erro: resposta por regras usando a base
   → ChatResponse { resposta, modelo, fontes }
 ```
+
+O detalhe do chamado tem o botão “Perguntar à IA sobre este chamado”. Ele
+fecha o modal e dispara um evento para o layout abrir o chat já com o
+`ticket_id` autorizado. O backend valida o acesso antes de montar o contexto.
 
 A base de conhecimento fica em `backend/app/ai/base_conhecimento.md`. Para
 adicionar conteúdo, crie uma nova seção com `## Título` e texto em português.
@@ -285,11 +304,14 @@ requisições e trata 401. O endereço vem de `VITE_API_URL`.
 ### 5.3. Chat
 
 `ChatIA.jsx` é renderizado dentro de `SidebarLayout.jsx`, portanto aparece em
-todas as telas internas e desaparece no logout. Ele:
+todas as telas internas e desaparece no logout. O estado de abertura fica no
+layout e é compartilhado pelo botão flutuante e pela ilustração da sidebar. Ele:
 
 - mantém as mensagens apenas em memória;
 - envia Enter para enviar e Shift+Enter para quebrar linha;
-- exibe sugestões iniciais;
+- exibe sugestões iniciais e fontes das respostas;
+- permite limpar a conversa e remover o contexto de um chamado;
+- recebe um `ticketId` opcional quando aberto pelo detalhe do chamado;
 - mostra “modo básico” quando não há IA generativa configurada;
 - usa `white-space: pre-wrap` e nunca `dangerouslySetInnerHTML`;
 - usa `z-index` abaixo do modal do Bootstrap.

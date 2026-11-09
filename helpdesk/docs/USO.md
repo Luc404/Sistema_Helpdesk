@@ -205,7 +205,7 @@ grava:
 - se foi a IA que definiu;
 - confiança da classificação;
 - justificativa;
-- origem (`IA` ou `REGRA`).
+- origem (`IA`, `HIBRIDA` ou `REGRA`).
 
 Se a IA estiver indisponível, o chamado é criado normalmente com a prioridade
 de fallback. A abertura nunca falha por causa da IA.
@@ -219,6 +219,11 @@ A IA considera título, descrição, tipo de problema, serviço e unidade:
 - **MÉDIA:** um usuário ou poucos afetados, prejuízo relevante, contorno
   temporário, dúvida que bloqueia tarefa.
 - **BAIXA:** dúvida simples, informação, treinamento, melhoria, sem bloqueio.
+
+A classificação é híbrida: a IA interpreta o chamado, mas regras locais
+funcionam como proteção. Se houver sinal explícito de segurança, perda de dados
+ou indisponibilidade ampla, a prioridade não será rebaixada pela IA. Por isso,
+um chamado pode aparecer com origem `HIBRIDA`.
 
 ## 9. Acompanhando chamados
 
@@ -234,12 +239,20 @@ prioridade, pelos chamados mais recentes.
 
 ## 10. Usando o chat de dúvidas
 
-O botão flutuante com ícone de conversa aparece no canto inferior direito de
-todas as telas internas.
+O chat pode ser aberto pelo botão flutuante no canto inferior direito de todas
+as telas internas ou pela ilustração “Help Desk Support” na barra lateral.
 
-1. Clique no botão.
+1. Clique no botão flutuante ou na ilustração.
 2. Digite a dúvida ou escolha uma sugestão.
 3. Pressione Enter para enviar ou Shift+Enter para quebrar linha.
+
+Para perguntar sobre um chamado específico, abra os detalhes dele e clique em
+“Perguntar à IA sobre este chamado”. O chat abre com o contexto autorizado e
+mostra o número do chamado no cabeçalho. Use o “X” ao lado do número para
+remover esse contexto.
+
+As respostas podem exibir as seções da base de conhecimento usadas como fonte.
+O botão de seta no cabeçalho limpa a conversa atual.
 
 O chat pode responder sobre:
 
