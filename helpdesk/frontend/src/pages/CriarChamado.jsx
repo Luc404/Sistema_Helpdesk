@@ -23,7 +23,7 @@ import { chamadoService } from '../services/chamadoService';
 import { servicoService } from '../services/servicoService';
 import { unidadeService } from '../services/unidadeService';
 import { usuarioService } from '../services/usuarioService';
-import { PRIORIDADE_OPCOES, PRIORIDADE_LABEL, TIPOS_PROBLEMA } from '../constants/labels';
+import { TIPOS_PROBLEMA } from '../constants/labels';
 
 // Página de criação de novo chamado
 export const CriarChamado = () => {
@@ -42,7 +42,6 @@ export const CriarChamado = () => {
     titulo: '',        // obrigatório pela API (TicketCreate.titulo)
     servico: '',       // vira servico_id
     unidade: usuario?.unidade_id ? String(usuario.unidade_id) : '',  // vira unidade_id
-    prioridade: 'MEDIA',
     duvida: '',        // vira tipo_problema ("duvida" | "defeito")
     copias: [],        // vira copia_user_ids (array de ids)
     descricao: '',     // obrigatória pela API
@@ -123,7 +122,6 @@ export const CriarChamado = () => {
         servico_id: Number(formData.servico),
         unidade_id: Number(formData.unidade),
         tipo_problema: formData.duvida,
-        prioridade: formData.prioridade,
         copia_user_ids: formData.copias,
       });
 
@@ -254,23 +252,13 @@ export const CriarChamado = () => {
                   ))}
                 </select>
 
-                {/* Campo: Prioridade */}
-                <label className="form-label fw-bold" htmlFor="prioridade">
-                  Prioridade
-                </label>
-                <select
-                  id="prioridade"
-                  name="prioridade"
-                  className="form-select"
-                  value={formData.prioridade}
-                  onChange={handleChange}
-                >
-                  {PRIORIDADE_OPCOES.map((p) => (
-                    <option key={p} value={p}>
-                      {PRIORIDADE_LABEL[p]}
-                    </option>
-                  ))}
-                </select>
+                {/* A prioridade deixou de ser escolhida manualmente: o
+                    backend classifica o chamado com IA na abertura. */}
+                <div className="alert alert-info py-2 small mb-0" role="note">
+                  <i className="bi bi-stars me-1"></i>
+                  A prioridade será definida automaticamente pela IA com base
+                  no título, na descrição, no tipo de problema e no serviço.
+                </div>
               </div>
 
               {/* Campo: Usuários em cópia.

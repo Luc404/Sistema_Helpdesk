@@ -25,8 +25,22 @@ export const PRIORIDADE_LABEL = {
   ALTA: 'Alta',
 };
 
-// Ordem exibida no <select> de prioridade, da menos para a mais urgente.
+// Ordem exibida em filtros e ordenações, da menos para a mais urgente.
 export const PRIORIDADE_OPCOES = ['BAIXA', 'MEDIA', 'ALTA'];
+
+// Cores do badge de prioridade (classes do Bootstrap).
+export const PRIORIDADE_COR = {
+  BAIXA: 'text-bg-secondary',
+  MEDIA: 'text-bg-warning',
+  ALTA: 'text-bg-danger',
+};
+
+// Peso numérico para ordenar a fila: ALTA primeiro.
+export const PRIORIDADE_PESO = {
+  ALTA: 3,
+  MEDIA: 2,
+  BAIXA: 1,
+};
 
 // Cores do badge de status, para diferenciar de relance na tabela
 // São classes do Bootstrap: fundo na cor, texto branco.

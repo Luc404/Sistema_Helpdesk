@@ -31,6 +31,11 @@ export interface Chamado {
     tecnico_id: number | null;
     servico_id: number;
     unidade_id: number;
+    prioridade_ia?: boolean | null;
+    prioridade_confianca?: number | null;
+    prioridade_justificativa?: string | null;
+    prioridade_origem?: 'IA' | 'REGRA' | 'MANUAL' | null;
+    prioridade_classificada_em?: string | null;
 }
 
 // Formato de GET /tickets/detalhes — mesmo Chamado, porém com os nomes
@@ -53,7 +58,6 @@ export interface ChamadoCreate {
     servico_id: number;
     unidade_id: number;
     tipo_problema: string;
-    prioridade?: Prioridade;
     tecnico_id?: number | null;
     copia_user_ids?: number[];
 }
@@ -64,7 +68,6 @@ export interface ChamadoUpdate {
     titulo?: string;
     descricao?: string;
     status?: StatusChamado;
-    prioridade?: Prioridade;
     servico_id?: number;
     unidade_id?: number;
     tipo_problema?: string;
@@ -99,7 +102,11 @@ export const chamadoService = {
     // POST /tickets/ — exige token (qualquer usuário logado pode abrir).
     // O "cliente_id" é definido pelo backend a partir do token.
     async criar(dados: ChamadoCreate): Promise<Chamado> {
-        const response = await api.post<Chamado>('/tickets/', dados);
+        // A classificação por IA pode levar alguns segundos: usamos um
+        // timeout maior só nesta chamada para não abortar antes do fallback.
+        const response = await api.post<Chamado>('/tickets/', dados, {
+            timeout: 25000,
+        });
         return response.data;
     },
 

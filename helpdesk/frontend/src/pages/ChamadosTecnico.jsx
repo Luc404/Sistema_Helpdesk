@@ -27,7 +27,14 @@ import { SidebarLayout } from './SidebarLayout';
 import { DetalhesChamado } from '../components/DetalhesChamado';
 import { useRequisicao } from '../hooks/useRequisicao';
 import { chamadoService } from '../services/chamadoService';
-import { STATUS_LABEL, STATUS_COR, PRIORIDADE_LABEL, formatarData } from '../constants/labels';
+import {
+  STATUS_LABEL,
+  STATUS_COR,
+  PRIORIDADE_LABEL,
+  PRIORIDADE_COR,
+  PRIORIDADE_PESO,
+  formatarData,
+} from '../constants/labels';
 
 // Quantas linhas a tabela exibe por página (controle "Exibir N por página").
 const TAMANHO_PAGINA = 9;
@@ -58,10 +65,17 @@ export const ChamadosTecnico = () => {
     if (!chamados) return [];
 
     const termo = busca.trim();
+    const filtrados = termo
+      ? chamados.filter((c) => String(c.id).includes(termo))
+      : chamados;
 
-    if (!termo) return chamados;
-
-    return chamados.filter((c) => String(c.id).includes(termo));
+    // Fila do técnico: prioridade mais alta primeiro e, dentro dela,
+    // os chamados mais recentes.
+    return [...filtrados].sort((a, b) => {
+      const peso = (PRIORIDADE_PESO[b.prioridade] || 0) - (PRIORIDADE_PESO[a.prioridade] || 0);
+      if (peso !== 0) return peso;
+      return new Date(b.data_criacao) - new Date(a.data_criacao);
+    });
   }, [chamados, busca]);
 
   // Paginação feita no navegador: a API não aceita ?limit / ?offset.
@@ -158,7 +172,13 @@ export const ChamadosTecnico = () => {
                 >
                   <td>{item.id}</td>
                   <td className="fw-bold">{item.servico_nome}</td>
-                  <td>{PRIORIDADE_LABEL[item.prioridade] || item.prioridade}</td>
+                  <td title={item.prioridade_justificativa || undefined}>
+                    <span
+                      className={`badge ${PRIORIDADE_COR[item.prioridade] || 'text-bg-secondary'}`}
+                    >
+                      {PRIORIDADE_LABEL[item.prioridade] || item.prioridade}
+                    </span>
+                  </td>
                   {/* O <select> permite ao técnico mudar o status, o que
                       dispara o PUT /tickets/{id}. Fica desabilitado enquanto
                       a requisição daquela linha está em andamento.

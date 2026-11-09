@@ -15,6 +15,7 @@ import {
   STATUS_LABEL,
   STATUS_COR,
   PRIORIDADE_LABEL,
+  PRIORIDADE_COR,
   TIPOS_PROBLEMA,
   formatarDataHora,
 } from '../constants/labels';
@@ -24,6 +25,13 @@ import {
 // próprio valor para não esconder o dado.
 const rotuloTipo = (valor) =>
   TIPOS_PROBLEMA.find((t) => t.valor === valor)?.rotulo || valor;
+
+const rotuloOrigemPrioridade = (origem) => {
+  if (origem === 'IA') return 'Definida automaticamente pela IA';
+  if (origem === 'REGRA') return 'Definida por regras (IA indisponível)';
+  if (origem === 'MANUAL') return 'Definida manualmente';
+  return null;
+};
 
 // Um par "rótulo -> valor". Componente pequeno para não repetir a mesma
 // marcação em cada campo da grade abaixo.
@@ -38,6 +46,12 @@ const Campo = ({ rotulo, children }) => (
 export const DetalhesChamado = ({ chamado, onFechar }) => {
   // Sem chamado selecionado não há o que mostrar (o pai controla o estado).
   if (!chamado) return null;
+
+  const origemPrioridade = rotuloOrigemPrioridade(chamado.prioridade_origem);
+  const confianca = Number(chamado.prioridade_confianca);
+  const confiancaTexto = Number.isFinite(confianca)
+    ? `${Math.round(confianca * 100)}% de confiança`
+    : null;
 
   return (
     <Modal titulo={`Chamado #${chamado.id}`} onFechar={onFechar}>
@@ -55,7 +69,24 @@ export const DetalhesChamado = ({ chamado, onFechar }) => {
         <Campo rotulo="Técnico">{chamado.tecnico_nome || 'Não atribuído'}</Campo>
 
         <Campo rotulo="Prioridade">
-          {PRIORIDADE_LABEL[chamado.prioridade] || chamado.prioridade}
+          <span
+            className={`badge ${PRIORIDADE_COR[chamado.prioridade] || 'text-bg-secondary'}`}
+          >
+            {PRIORIDADE_LABEL[chamado.prioridade] || chamado.prioridade}
+          </span>
+
+          {origemPrioridade && (
+            <div className="small text-muted mt-1">
+              {origemPrioridade}
+              {confiancaTexto ? ` — ${confiancaTexto}` : ''}
+            </div>
+          )}
+
+          {chamado.prioridade_justificativa && (
+            <div className="small fst-italic mt-1">
+              {chamado.prioridade_justificativa}
+            </div>
+          )}
         </Campo>
 
         <Campo rotulo="Status">
