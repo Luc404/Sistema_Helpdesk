@@ -80,6 +80,58 @@ def garantir_coluna_setor(db_engine) -> None:
         )
 
 
+def garantir_colunas_prioridade_ia(db_engine) -> None:
+    """Adiciona as colunas de auditoria da prioridade à tabela tickets.
+
+    O create_all só cria tabelas novas; como o projeto ainda não usa
+    Alembic, esta migração leve cobre bancos que já existiam antes da IA.
+    É idempotente: no PostgreSQL usa IF NOT EXISTS e no SQLite confere as
+    colunas pelo inspector (o SQLite não aceita IF NOT EXISTS em coluna).
+    """
+    inspetor = inspect(db_engine)
+
+    if "tickets" not in inspetor.get_table_names():
+        return
+
+    colunas = {coluna["name"] for coluna in inspetor.get_columns("tickets")}
+
+    if db_engine.dialect.name == "postgresql":
+        definicoes = {
+            "prioridade_ia": "BOOLEAN DEFAULT FALSE",
+            "prioridade_confianca": "DOUBLE PRECISION",
+            "prioridade_justificativa": "TEXT",
+            "prioridade_origem": "VARCHAR(20)",
+            "prioridade_classificada_em": "TIMESTAMPTZ",
+        }
+
+        with db_engine.begin() as conexao:
+            for nome, tipo in definicoes.items():
+                conexao.execute(
+                    text(f"ALTER TABLE tickets ADD COLUMN IF NOT EXISTS {nome} {tipo}")
+                )
+
+        return
+
+    definicoes_sqlite = {
+        "prioridade_ia": "BOOLEAN DEFAULT 0",
+        "prioridade_confianca": "REAL",
+        "prioridade_justificativa": "TEXT",
+        "prioridade_origem": "VARCHAR(20)",
+        "prioridade_classificada_em": "DATETIME",
+    }
+
+    faltantes = {
+        nome: tipo for nome, tipo in definicoes_sqlite.items() if nome not in colunas
+    }
+
+    if not faltantes:
+        return
+
+    with db_engine.begin() as conexao:
+        for nome, tipo in faltantes.items():
+            conexao.execute(text(f"ALTER TABLE tickets ADD COLUMN {nome} {tipo}"))
+
+
 def garantir_role_admin(db_engine) -> None:
     """Adiciona o valor 'ADMIN' ao enum user_role do PostgreSQL.
 
@@ -108,6 +160,9 @@ Base.metadata.create_all(bind=engine)
 
 # 1.1. Migração leve da coluna users.setor_id (ver função acima).
 garantir_coluna_setor(engine)
+
+# 1.1.1. Migração leve das colunas de auditoria da prioridade da IA.
+garantir_colunas_prioridade_ia(engine)
 
 # 1.2. Garante o valor 'ADMIN' no enum user_role ANTES do seed criar a
 #      conta do administrador (PostgreSQL; idempotente).

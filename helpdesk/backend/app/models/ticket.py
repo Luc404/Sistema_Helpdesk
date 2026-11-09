@@ -6,7 +6,17 @@
 # (cliente que abriu, técnico responsável, serviço e unidade relacionados).
 
 import enum
-from sqlalchemy import Column, Integer, String, ForeignKey, Enum as SQLEnum, Text, DateTime
+from sqlalchemy import (
+    Boolean,
+    Column,
+    Integer,
+    String,
+    ForeignKey,
+    Enum as SQLEnum,
+    Float,
+    Text,
+    DateTime,
+)
 from sqlalchemy.orm import relationship
 from app.database import Base
 from datetime import datetime, timezone
@@ -38,8 +48,16 @@ class Ticket(Base):
     # PUT /tickets/{id}, rota restrita ao perfil TÉCNICO.
     # O name="ticket_status" evita conflito com o enum de user.py no PostgreSQL.
     status = Column(SQLEnum(StatusEnum, name="ticket_status"), default=StatusEnum.ABERTO, nullable=False)
-    # Urgência escolhida por quem abriu o chamado.
+    # Urgência definida automaticamente pela IA (ou pelo fallback de regras).
     prioridade = Column(SQLEnum(PrioridadeEnum, name="ticket_prioridade"), default=PrioridadeEnum.MEDIA, nullable=False)
+
+    # Auditoria da classificação automática. Os campos são anuláveis para
+    # que chamados criados antes desta funcionalidade continuem válidos.
+    prioridade_ia = Column(Boolean, nullable=True, default=False)
+    prioridade_confianca = Column(Float, nullable=True)
+    prioridade_justificativa = Column(Text, nullable=True)
+    prioridade_origem = Column(String(20), nullable=True)
+    prioridade_classificada_em = Column(DateTime(timezone=True), nullable=True)
 
     # Datas de criação e de última atualização (devem ser usadas no update).
     data_criacao = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
