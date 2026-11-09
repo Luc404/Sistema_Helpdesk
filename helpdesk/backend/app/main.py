@@ -46,6 +46,7 @@ from app.routers.setor_router import router as setor_router
 from app.routers.ticket_router import router as ticket_router
 from app.routers.ticket_copia_router import router as ticket_copia_router
 from app.routers.convidado_router import router as convidado_router
+from app.routers.ai_router import router as ai_router
 from app.routers.ws_router import router as ws_router
 
 # Módulo de dados iniciais (cria a unidade "Matriz" se ela não existir).
@@ -211,6 +212,7 @@ app.include_router(setor_router)
 app.include_router(ticket_router)
 app.include_router(ticket_copia_router)
 app.include_router(convidado_router)
+app.include_router(ai_router)
 # O websocket não tem prefixo: a rota "/ws/tickets" é declarada no próprio
 # router (app/routers/ws_router.py).
 app.include_router(ws_router)
