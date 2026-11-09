@@ -17,6 +17,7 @@ import { useEffect, useState } from 'react';
 import { useAuth, ROLE_LABEL } from '../context/auth-context';
 import logoImg from '../assets/logo.png';
 import helpdeskImg from '../assets/helpdesk.png';
+import { ChatIA } from '../components/ChatIA';
 
 // Layout principal com sidebar fixa e área de conteúdo
 // Recebe children (conteúdo da página) e exibe sidebar baseada no tipo de usuário logado
@@ -240,6 +241,8 @@ export const SidebarLayout = ({ children }) => {
           {children}
         </main>
       </div>
+
+      <ChatIA />
     </div>
   );
 };
