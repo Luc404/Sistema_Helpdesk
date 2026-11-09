@@ -49,6 +49,46 @@ class Settings(BaseSettings):
     # POST /auth/master-key autentica.
     ADMIN_EMAIL: str = "admin@helpdesk.com"
 
+    # ============================================
+    # INTELIGÊNCIA ARTIFICIAL (compatível com OpenAI)
+    # ============================================
+    # A IA é usada para classificar a prioridade dos chamados e responder
+    # ao chatbot de dúvidas. A chave fica SOMENTE aqui no backend: nunca
+    # use uma variável "VITE_*" para ela, pois tudo com esse prefixo vai
+    # para o navegador.
+    #
+    # Com AI_ENABLED=True e AI_API_KEY vazia, o sistema continua
+    # funcionando em modo de fallback (regras para prioridade e busca
+    # simples na base de conhecimento para o chat).
+    AI_ENABLED: bool = True
+    AI_API_KEY: str = ""
+
+    # Endereço compatível com a API da OpenAI. Exemplos:
+    #   Groq:     https://api.groq.com/openai/v1
+    #   OpenAI:   https://api.openai.com/v1
+    #   Ollama:   http://127.0.0.1:11434/v1
+    #   Gemini:   https://generativelanguage.googleapis.com/v1beta/openai/
+    AI_BASE_URL: str = "https://api.groq.com/openai/v1"
+
+    # Modelos separados: um menor/rápido para classificar prioridade e um
+    # mais capaz para conversar no chat.
+    AI_MODEL_PRIORIDADE: str = "llama-3.1-8b-instant"
+    AI_MODEL_CHAT: str = "llama-3.3-70b-versatile"
+
+    # Tempo máximo de espera pela resposta do provedor. Mantenha abaixo do
+    # timeout do axios na abertura do chamado para o fallback agir antes.
+    AI_TIMEOUT_SECONDS: float = 8.0
+
+    # Limites de geração para controlar custo e latência.
+    AI_MAX_TOKENS_PRIORIDADE: int = 200
+    AI_MAX_TOKENS_CHAT: int = 800
+    AI_TEMPERATURE: float = 0.1
+
+    # Limites do chat.
+    AI_CHAT_MAX_HISTORICO: int = 10          # últimas N mensagens enviadas ao modelo
+    AI_CHAT_MAX_CARACTERES: int = 2000       # tamanho máximo de uma pergunta
+    AI_CHAT_MAX_POR_HORA: int = 30           # limite simples por usuário
+
     class Config:
         # Indica de qual arquivo ler as variáveis (sobrescrevem os padrões acima).
         env_file = ".env"

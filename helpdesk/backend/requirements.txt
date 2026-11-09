@@ -40,3 +40,7 @@ psycopg2-binary>=2.9
 
 # Validação de e-mail nos schemas (EmailStr do pydantic).
 email-validator>=2.0
+
+# Cliente HTTP para a IA. Usamos o SDK da OpenAI porque ele funciona com
+# qualquer provedor compatível (Groq, OpenAI, Gemini, Ollama, OpenRouter...).
+openai>=1.30
